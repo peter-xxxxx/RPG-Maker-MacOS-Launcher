@@ -1,5 +1,8 @@
 // disable-child.js
-// Guard against requiring or using child_process in any way.
+// Guard against using child_process in any way.
+// Loading the module itself is allowed because some benign game plugins
+// (for example PluginUtils) require it at startup. Every spawn/exec API is
+// replaced with a blocked stub, so nothing can actually run a process.
 const Module = require("module");
 const origRequire = Module.prototype.require;
 
@@ -16,25 +19,61 @@ function showPopup(msg) {
     }
 }
 
+const BLOCKED_METHODS = [
+    "exec",
+    "execFile",
+    "spawn",
+    "fork",
+    "spawnSync",
+    "execSync",
+    "execFileSync",
+];
+
+function blocked(name) {
+    return function () {
+        showPopup("⚠️ Attempt to use child_process." + name + "() was blocked!");
+        throw new Error("child_process is disabled");
+    };
+}
+
+function guardChildProcess(cp) {
+    for (const name of BLOCKED_METHODS) {
+        if (typeof cp[name] === "function") {
+            cp[name] = blocked(name);
+        }
+    }
+
+    // spawn()/exec() all end up here, so guard it as well.
+    const ChildProcess = cp.ChildProcess;
+    if (ChildProcess && ChildProcess.prototype) {
+        if (typeof ChildProcess.prototype.spawn === "function") {
+            ChildProcess.prototype.spawn = blocked("spawn");
+        }
+    }
+
+    return cp;
+}
+
+function loadChildProcess(context) {
+    try {
+        return origRequire.call(context, "node:child_process");
+    } catch (_) {
+        // Older NW.js / Node versions do not support the node: prefix.
+        return origRequire.call(context, "child_process");
+    }
+}
+
 Module.prototype.require = function (id) {
     if (id === "child_process" || id === "node:child_process") {
-        showPopup("⚠️ Attempt to load child_process was blocked!");
-        throw new Error("child_process is disabled in this runtime");
+        return guardChildProcess(loadChildProcess(this));
     }
     return origRequire.apply(this, arguments);
 };
 
-// If anything already obtained a reference, neuter the methods.
+// If anything already obtained a reference before this guard was installed,
+// neuter the methods on the cached module too.
 try {
-    const cp = origRequire.call({}, "node:child_process");
-    for (const k of ["exec", "execFile", "spawn", "fork", "spawnSync", "execSync", "execFileSync"]) {
-        if (k in cp) {
-            cp[k] = function () {
-                showPopup("⚠️ Attempt to use child_process." + k + "() was blocked!");
-                throw new Error("child_process is disabled");
-            };
-        }
-    }
+    guardChildProcess(loadChildProcess(module));
 } catch (_) {
     /* ignore if loading itself throws */
 }

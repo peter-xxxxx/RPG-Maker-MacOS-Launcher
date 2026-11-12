@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('Cheat_Menu.js', '.'), ('Cheat_Menu.css', '.'), ('EasyRPG-Standalone', '.'), ('bg.js', '.'), ('disable-child.js', '.'), ('disable-net.js', '.')],
+    datas=[('Cheat_Menu.js', '.'), ('Cheat_Menu.css', '.'), ('EasyRPG-Standalone', '.'), ('bg.js', '.'), ('disable-child.js', '.'), ('disable-net.js', '.'), ('RPGM_Launcher_Translate.js', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -48,5 +48,5 @@ app = BUNDLE(
     name='RPG-Maker-Launcher.app',
     icon='./icon.icns',
     bundle_identifier=None,
-    version='3.3.4',
+    version='3.5.0',
 )

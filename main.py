@@ -12,12 +12,33 @@ import re
 from pathlib import Path
 from functools import partial
 from evbunpack.__main__ import unpack_files
-from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QFileDialog,
-                               QVBoxLayout, QHBoxLayout, QWidget, QMessageBox, QDialog, QComboBox,
-                               QDialogButtonBox, QScrollArea, QGroupBox, QFormLayout, QLabel, QCheckBox, QProgressDialog, QLineEdit, QPlainTextEdit)
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QPushButton,
+    QFileDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QWidget,
+    QMessageBox,
+    QDialog,
+    QComboBox,
+    QDialogButtonBox,
+    QScrollArea,
+    QGroupBox,
+    QFormLayout,
+    QLabel,
+    QCheckBox,
+    QProgressDialog,
+    QLineEdit,
+    QPlainTextEdit,
+)
 from PySide6.QtCore import QTimer, QDateTime, Qt
 
-current_version = "3.3.4"
+import translation
+from translation_dialog import TranslationDialog
+
+current_version = "3.5.0"
 config_version = ""
 latest_commit_sha = ""
 last_commit_sha = ""
@@ -26,103 +47,268 @@ last_build_number = 0
 
 # Default settings for MKXP-Z
 default_enabled_settings = {
-            "rgssVersion": "Force", "displayFPS": False, "printFPS": False, "winResizable": False,
-            "fullscreen": False, "fixedAspectRatio": False, "smoothScaling": False,
-            "smoothScalingDown": False, "bitmapSmoothScaling": False, "bitmapSmoothScalingDown": False,
-            "smoothScalingMipmaps": False, "bicubicSharpness": False, "xbrzScalingFactor": False,
-            "enableHires": False, "textureScalingFactor": False, "framebufferScalingFactor": False,
-            "atlasScalingFactor": False, "vsync": False, "defScreenW": False, "defScreenH": False,
-            "windowTitle": False, "fixedFramerate": False, "frameSkip": False, "syncToRefreshrate": False,
-            "solidFonts": False, "preferMetalRenderer": False, "subImageFix": False, "enableBlitting": False,
-            "maxTextureSize": False, "integerScalingActive": False, "integerScalingLastMile": False,
-            "gameFolder": "Force", "anyAltToggleFS": False, "enableReset": False, "enableSettings": False,
-            "allowSymlinks": False, "dataPathOrg": False, "dataPathApp": False, "iconPath": False,
-            "customScript": False, "preloadScript": "Force", "postloadScript": False, "pathCache": False,
-            "RTP": "Force", "patches": False, "useScriptNames": False, "fontSub": False, "rubyLoadpath": False,
-            "JITEnable": False, "JITVerboseLevel": False, "JITMaxCache": False, "JITMinCalls": False,
-            "YJITEnable": False, "midiSoundFont": "Force", "midiChorus": False, "midiReverb": False,
-            "SESourceCount": False, "BGMTrackCount": False, "execName": False, "bindingNames": False,
-            "dumpAtlas": False
-        }
+    "rgssVersion": "Force",
+    "displayFPS": False,
+    "printFPS": False,
+    "winResizable": False,
+    "fullscreen": False,
+    "fixedAspectRatio": False,
+    "smoothScaling": False,
+    "smoothScalingDown": False,
+    "bitmapSmoothScaling": False,
+    "bitmapSmoothScalingDown": False,
+    "smoothScalingMipmaps": False,
+    "bicubicSharpness": False,
+    "xbrzScalingFactor": False,
+    "enableHires": False,
+    "textureScalingFactor": False,
+    "framebufferScalingFactor": False,
+    "atlasScalingFactor": False,
+    "vsync": False,
+    "defScreenW": False,
+    "defScreenH": False,
+    "windowTitle": False,
+    "fixedFramerate": False,
+    "frameSkip": False,
+    "syncToRefreshrate": False,
+    "solidFonts": False,
+    "preferMetalRenderer": False,
+    "subImageFix": False,
+    "enableBlitting": False,
+    "maxTextureSize": False,
+    "integerScalingActive": False,
+    "integerScalingLastMile": False,
+    "gameFolder": "Force",
+    "anyAltToggleFS": False,
+    "enableReset": False,
+    "enableSettings": False,
+    "allowSymlinks": False,
+    "dataPathOrg": False,
+    "dataPathApp": False,
+    "iconPath": False,
+    "customScript": False,
+    "preloadScript": "Force",
+    "postloadScript": False,
+    "pathCache": False,
+    "RTP": "Force",
+    "patches": False,
+    "useScriptNames": False,
+    "fontSub": False,
+    "rubyLoadpath": False,
+    "JITEnable": False,
+    "JITVerboseLevel": False,
+    "JITMaxCache": False,
+    "JITMinCalls": False,
+    "YJITEnable": False,
+    "midiSoundFont": "Force",
+    "midiChorus": False,
+    "midiReverb": False,
+    "SESourceCount": False,
+    "BGMTrackCount": False,
+    "execName": False,
+    "bindingNames": False,
+    "dumpAtlas": False,
+}
 
 default_advanced_settings = {
-            "rgssVersion": 0, "displayFPS": False, "printFPS": False, "winResizable": True,
-            "fullscreen": False, "fixedAspectRatio": True, "smoothScaling": 0,
-            "smoothScalingDown": 0, "bitmapSmoothScaling": 0, "bitmapSmoothScalingDown": 0,
-            "smoothScalingMipmaps": False, "bicubicSharpness": 100, "xbrzScalingFactor": 4.0,
-            "enableHires": False, "textureScalingFactor": 4.0, "framebufferScalingFactor": 4.0,
-            "atlasScalingFactor": 4.0, "vsync": False, "defScreenW": 640, "defScreenH": 480,
-            "windowTitle": "Custom Title", "fixedFramerate": 0, "frameSkip": False,
-            "syncToRefreshrate": False, "solidFonts": ["Arial", "Times New Roman"],
-            "preferMetalRenderer": True, "subImageFix": False, "enableBlitting": False,
-            "maxTextureSize": 0, "integerScalingActive": False, "integerScalingLastMile": True,
-            "gameFolder": "", "anyAltToggleFS": False, "enableReset": True, "enableSettings": True,
-            "allowSymlinks": True, "dataPathOrg": "mycompany", "dataPathApp": "mygame",
-            "iconPath": "/path/to/icon.png", "customScript": "/path/to/script.rb",
-            "preloadScript": [],
-            "postloadScript": ["/path/to/script.rb"], "pathCache": True, "RTP": [],
-            "patches": ["/path/to/patch1.zip"], "useScriptNames": True, "fontSub": [
-                "Arial>Open Sans", "Times New Roman>Liberation Serif"],
-            "rubyLoadpath": ["/usr/lib64/ruby/"], "JITEnable": False, "JITVerboseLevel": 0,
-            "JITMaxCache": 100, "JITMinCalls": 10000, "YJITEnable": False, "midiSoundFont": "",
-            "midiChorus": False, "midiReverb": False, "SESourceCount": 6, "BGMTrackCount": 1,
-            "execName": "Game", "bindingNames": {"c": "Confirm", "b": "Cancel"},
-            "dumpAtlas": False
-        }
+    "rgssVersion": 0,
+    "displayFPS": False,
+    "printFPS": False,
+    "winResizable": True,
+    "fullscreen": False,
+    "fixedAspectRatio": True,
+    "smoothScaling": 0,
+    "smoothScalingDown": 0,
+    "bitmapSmoothScaling": 0,
+    "bitmapSmoothScalingDown": 0,
+    "smoothScalingMipmaps": False,
+    "bicubicSharpness": 100,
+    "xbrzScalingFactor": 4.0,
+    "enableHires": False,
+    "textureScalingFactor": 4.0,
+    "framebufferScalingFactor": 4.0,
+    "atlasScalingFactor": 4.0,
+    "vsync": False,
+    "defScreenW": 640,
+    "defScreenH": 480,
+    "windowTitle": "Custom Title",
+    "fixedFramerate": 0,
+    "frameSkip": False,
+    "syncToRefreshrate": False,
+    "solidFonts": ["Arial", "Times New Roman"],
+    "preferMetalRenderer": True,
+    "subImageFix": False,
+    "enableBlitting": False,
+    "maxTextureSize": 0,
+    "integerScalingActive": False,
+    "integerScalingLastMile": True,
+    "gameFolder": "",
+    "anyAltToggleFS": False,
+    "enableReset": True,
+    "enableSettings": True,
+    "allowSymlinks": True,
+    "dataPathOrg": "mycompany",
+    "dataPathApp": "mygame",
+    "iconPath": "/path/to/icon.png",
+    "customScript": "/path/to/script.rb",
+    "preloadScript": [],
+    "postloadScript": ["/path/to/script.rb"],
+    "pathCache": True,
+    "RTP": [],
+    "patches": ["/path/to/patch1.zip"],
+    "useScriptNames": True,
+    "fontSub": ["Arial>Open Sans", "Times New Roman>Liberation Serif"],
+    "rubyLoadpath": ["/usr/lib64/ruby/"],
+    "JITEnable": False,
+    "JITVerboseLevel": 0,
+    "JITMaxCache": 100,
+    "JITMinCalls": 10000,
+    "YJITEnable": False,
+    "midiSoundFont": "",
+    "midiChorus": False,
+    "midiReverb": False,
+    "SESourceCount": 6,
+    "BGMTrackCount": 1,
+    "execName": "Game",
+    "bindingNames": {"c": "Confirm", "b": "Cancel"},
+    "dumpAtlas": False,
+}
 
 # EasyRPG advanced settings
 default_enabled_easyrpg_settings = {
-            "--autobattle-algo": False, "--enemyai-algo": False, "--config-path": False,
-            "--encoding": False, "--engine": False, "--font1": False, "--font1-size": False,
-            "--font2": False, "--font2-size": False, "--font-path": False, "--language": False,
-            "--load-game-id": False, "--log-file": False, "--new-game": False, "--no-log-color": False,
-            "--no-rtp": False, "--patch-antilag-switch": False, "--patch-common-this": False,
-            "--patch-direct-menu": False, "--patch-dynrpg": False, "--patch-easyrpg": False,
-            "--patch-key-patch": False, "--patch-maniac": False, "--patch-pic-unlock": False,
-            "--patch-rpg2k3-cmds": False, "--no-patch": False, "--record-input": False,
-            "--replay-input": False, "--rtp-path": False, "--save-path": False, "--seed": False,
-            "--fps-limit": False, "--no-fps-limit": False, "--game-resolution": False,
-            "--pause-focus-lost": False, "--no-pause-focus-lost": False, "--scaling": False,
-            "--show-fps": False, "--fps-render-window": False, "--no-show-fps": False,
-            "--stretch": False, "--no-stretch": False, "--vsync": False, "--no-vsync": False,
-            "--no-audio": False, "--music-volume": False, "--sound-volume": False,
-            "--soundfont": False, "--soundfont-path": False, "--battle-test": False,
-            "--hide-title": False, "--start-map-id": False, "--start-party": False,
-            "--start-position": False, "--test-play": False
-        }
+    "--autobattle-algo": False,
+    "--enemyai-algo": False,
+    "--config-path": False,
+    "--encoding": False,
+    "--engine": False,
+    "--font1": False,
+    "--font1-size": False,
+    "--font2": False,
+    "--font2-size": False,
+    "--font-path": False,
+    "--language": False,
+    "--load-game-id": False,
+    "--log-file": False,
+    "--new-game": False,
+    "--no-log-color": False,
+    "--no-rtp": False,
+    "--patch-antilag-switch": False,
+    "--patch-common-this": False,
+    "--patch-direct-menu": False,
+    "--patch-dynrpg": False,
+    "--patch-easyrpg": False,
+    "--patch-key-patch": False,
+    "--patch-maniac": False,
+    "--patch-pic-unlock": False,
+    "--patch-rpg2k3-cmds": False,
+    "--no-patch": False,
+    "--record-input": False,
+    "--replay-input": False,
+    "--rtp-path": False,
+    "--save-path": False,
+    "--seed": False,
+    "--fps-limit": False,
+    "--no-fps-limit": False,
+    "--game-resolution": False,
+    "--pause-focus-lost": False,
+    "--no-pause-focus-lost": False,
+    "--scaling": False,
+    "--show-fps": False,
+    "--fps-render-window": False,
+    "--no-show-fps": False,
+    "--stretch": False,
+    "--no-stretch": False,
+    "--vsync": False,
+    "--no-vsync": False,
+    "--no-audio": False,
+    "--music-volume": False,
+    "--sound-volume": False,
+    "--soundfont": False,
+    "--soundfont-path": False,
+    "--battle-test": False,
+    "--hide-title": False,
+    "--start-map-id": False,
+    "--start-party": False,
+    "--start-position": False,
+    "--test-play": False,
+}
 
 default_advanced_easyrpg_settings = {
-            "--autobattle-algo": "RPG_RT", "--enemyai-algo": "RPG_RT", "--config-path": "",
-            "--encoding": "", "--engine": "", "--font1": "", "--font1-size": 12,
-            "--font2": "", "--font2-size": 12, "--font-path": "", "--language": "",
-            "--load-game-id": "", "--log-file": "", "--new-game": False, "--no-log-color": False,
-            "--no-rtp": False, "--patch-antilag-switch": "", "--patch-common-this": False,
-            "--patch-direct-menu": "", "--patch-dynrpg": False, "--patch-easyrpg": False,
-            "--patch-key-patch": False, "--patch-maniac": 1, "--patch-pic-unlock": False,
-            "--patch-rpg2k3-cmds": False, "--no-patch": False, "--project-path": "",
-            "--record-input": "", "--replay-input": "", "--rtp-path": "", "--save-path": "",
-            "--seed": "", "--fps-limit": 60, "--no-fps-limit": False, "--game-resolution": "",
-            "--pause-focus-lost": False, "--no-pause-focus-lost": False, "--scaling": "",
-            "--show-fps": False, "--fps-render-window": False, "--no-show-fps": False,
-            "--stretch": False, "--no-stretch": False, "--vsync": True, "--no-vsync": False,
-            "--no-audio": False, "--music-volume": 100, "--sound-volume": 100, "--soundfont": "",
-            "--soundfont-path": "", "--battle-test": "", "--hide-title": False, "--start-map-id": "",
-            "--start-party": "", "--start-position": "", "--test-play": False
-        }
+    "--autobattle-algo": "RPG_RT",
+    "--enemyai-algo": "RPG_RT",
+    "--config-path": "",
+    "--encoding": "",
+    "--engine": "",
+    "--font1": "",
+    "--font1-size": 12,
+    "--font2": "",
+    "--font2-size": 12,
+    "--font-path": "",
+    "--language": "",
+    "--load-game-id": "",
+    "--log-file": "",
+    "--new-game": False,
+    "--no-log-color": False,
+    "--no-rtp": False,
+    "--patch-antilag-switch": "",
+    "--patch-common-this": False,
+    "--patch-direct-menu": "",
+    "--patch-dynrpg": False,
+    "--patch-easyrpg": False,
+    "--patch-key-patch": False,
+    "--patch-maniac": 1,
+    "--patch-pic-unlock": False,
+    "--patch-rpg2k3-cmds": False,
+    "--no-patch": False,
+    "--project-path": "",
+    "--record-input": "",
+    "--replay-input": "",
+    "--rtp-path": "",
+    "--save-path": "",
+    "--seed": "",
+    "--fps-limit": 60,
+    "--no-fps-limit": False,
+    "--game-resolution": "",
+    "--pause-focus-lost": False,
+    "--no-pause-focus-lost": False,
+    "--scaling": "",
+    "--show-fps": False,
+    "--fps-render-window": False,
+    "--no-show-fps": False,
+    "--stretch": False,
+    "--no-stretch": False,
+    "--vsync": True,
+    "--no-vsync": False,
+    "--no-audio": False,
+    "--music-volume": 100,
+    "--sound-volume": 100,
+    "--soundfont": "",
+    "--soundfont-path": "",
+    "--battle-test": "",
+    "--hide-title": False,
+    "--start-map-id": "",
+    "--start-party": "",
+    "--start-position": "",
+    "--test-play": False,
+}
 
 # Set up logging
 LOG_FILE = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/log.txt")
+
 
 def check_appdir():
     app_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher")
     if not os.path.exists(app_dir):
         os.makedirs(app_dir)
     # Clear log file on startup
-    with open(LOG_FILE, 'w') as file:
+    with open(LOG_FILE, "w") as file:
         file.write("")
 
+
 class RPGMLauncher(QMainWindow):
-    SETTINGS_FILE = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/settings.json")
+    SETTINGS_FILE = os.path.expanduser(
+        "~/Library/Application Support/RPGM-Launcher/settings.json"
+    )
 
     def __init__(self):
         super().__init__()
@@ -154,16 +340,22 @@ class RPGMLauncher(QMainWindow):
         self.extract_checkbox = QCheckBox("Extract game_en.exe", self)
         self.layout.addWidget(self.extract_checkbox)
 
-        self.cheat_menu_checkbox = QCheckBox("Add Cheat Menu (Press [1] key to open)", self)
+        self.cheat_menu_checkbox = QCheckBox(
+            "Add Cheat Menu (Press [1] key to open)", self
+        )
         self.layout.addWidget(self.cheat_menu_checkbox)
 
         self.optimize_space_checkbox = QCheckBox("Optimize Space", self)
         self.layout.addWidget(self.optimize_space_checkbox)
 
-        self.disable_protection_checkbox = QCheckBox("Disable Protection (Not Recommended)", self)
+        self.disable_protection_checkbox = QCheckBox(
+            "Disable Protection (Not Recommended)", self
+        )
         self.layout.addWidget(self.disable_protection_checkbox)
 
-        self.getpixel_patch_checkbox = QCheckBox("Patch Bitmap.getPixel (Fix NaN/Infinity Crash)", self)
+        self.getpixel_patch_checkbox = QCheckBox(
+            "Patch Bitmap.getPixel (Fix NaN/Infinity Crash)", self
+        )
         self.getpixel_patch_checkbox.setChecked(True)
         self.layout.addWidget(self.getpixel_patch_checkbox)
 
@@ -176,6 +368,10 @@ class RPGMLauncher(QMainWindow):
         self.start_game_button = QPushButton("Start Game", self)
         self.layout.addWidget(self.start_game_button)
         self.start_game_button.setEnabled(False)  # Disable until conditions are met
+
+        self.translate_button = QPushButton("Translate Game...", self)
+        self.layout.addWidget(self.translate_button)
+        self.translate_button.setEnabled(False)  # Enable only for MV/MZ games
 
         self.export_button = QPushButton("Export as Standalone App", self)
         self.layout.addWidget(self.export_button)
@@ -203,16 +399,21 @@ class RPGMLauncher(QMainWindow):
         self.uninstall_button.clicked.connect(self.uninstall_menu)
         self.select_button.clicked.connect(self.select_folder)
         self.start_game_button.clicked.connect(self.start_game)
+        self.translate_button.clicked.connect(self.open_translation_dialog)
         self.export_button.clicked.connect(self.export_standalone_app)
         self.open_save_editor_button.clicked.connect(self.open_save_editor)
         self.mkxpz_advanced_button.clicked.connect(self.open_mkxpz_advanced_settings)
-        self.easyrpg_advanced_button.clicked.connect(self.open_easyrpg_advanced_settings)
+        self.easyrpg_advanced_button.clicked.connect(
+            self.open_easyrpg_advanced_settings
+        )
         self.open_log_button.clicked.connect(self.open_log)
 
         self.update_version_selector()
         self.load_settings()
         if current_version != config_version:
-            logging.info(f"Launcher version changed from {config_version} to {current_version}")
+            logging.info(
+                f"Launcher version changed from {config_version} to {current_version}"
+            )
             logging.info("Removing old configurations...")
             self.remove_configs()
         self.update_select_button_state()
@@ -234,14 +435,30 @@ class RPGMLauncher(QMainWindow):
             "4. Click 'Start Game' to launch the game using the selected NWJS version.\n\n"
             "5. Click 'Export as Standalone App' to create a standalone application for the game.\n\n"
             "6. Click 'Open Save Editor' to open the save editor website and the save folder.\n\n"
-            "7. Click 'Uninstall Component' to remove installed versions of NWJS or other components.\n"
+            "7. Click 'Uninstall Component' to remove installed versions of NWJS or other components.\n\n"
+            "Translation (MV/MZ):\n"
+            "1. Select an MV/MZ game folder, then click 'Translate Game...'.\n"
+            "2. Click 'Export ManualTransFile.json...' and choose where to save the file.\n"
+            "   The default export uses clean line/fragment keys with no RPG Maker codes.\n"
+            "3. Translate the JSON values with any editor/tool. The default export uses\n"
+            "   identity values (source = value). The launcher reinserts the original control\n"
+            "   codes when you load the file. (Advanced: legacy exact-key export, or empty\n"
+            "   values instead of identity values.)\n"
+            "4. Click 'Load Translated JSON...' and select the translated file. Choose Merge\n"
+            "   to keep existing entries, or Replace to use only the loaded file.\n"
+            "5. Restart the game from the launcher to apply the translation.\n"
+            "Use 'Coverage Report...' to see missing database names, and 'Export Missing Text\n"
+            "JSON...' to export only the untranslated strings. 'Export Metadata JSON...' is\n"
+            "reference-only. Image-only title screens can use the optional title overlay.\n"
+            "Translation files are stored inside the detected js/plugins folder (MV: www/js/plugins,\n"
+            "MZ: js/plugins). Only standard MV/MZ database, system, map, and common-event text is translated.\n"
             "_____________________________________________________________________________\n"
             "RPG Maker 2000, 2003, XP, VX, and VX Ace games:\n\n"
             "1. Move game folder to anywhere but the 'Downloads' folder. (XP, VX, VX Ace only)\n\n"
             "2. Click 'Select Game Folder' to choose the folder containing the RPG Maker game.\n\n"
             "3. Click 'Start Game' to launch the game. You may be prompted to install MKXP-Z or EasyRPG."
         )
-        
+
         dialog = QDialog(self)
         dialog.setWindowTitle("Instructions")
         dialog.resize(650, 590)
@@ -272,7 +489,7 @@ class RPGMLauncher(QMainWindow):
             "EasyRPG Team - EasyRPG Player\n\n"
             "xem/pgm - Video Tutorial"
         )
-        
+
         dialog = QDialog(self)
         dialog.setWindowTitle("Credits")
         dialog.resize(650, 400)
@@ -292,23 +509,38 @@ class RPGMLauncher(QMainWindow):
     def load_settings(self):
         if os.path.exists(self.SETTINGS_FILE):
             try:
-                with open(self.SETTINGS_FILE, 'r') as file:
+                with open(self.SETTINGS_FILE, "r") as file:
                     settings = json.load(file)
-                    self.extract_checkbox.setChecked(settings.get('extract_game_en', False))
-                    self.cheat_menu_checkbox.setChecked(settings.get('add_cheat_menu', False))
-                    self.optimize_space_checkbox.setChecked(settings.get('optimize_space', False))
-                    self.disable_protection_checkbox.setChecked(settings.get('disable_protection', False))
-                    self.getpixel_patch_checkbox.setChecked(settings.get('patch_getpixel', True))
-                    last_version = settings.get('last_selected_version')
-                    if last_version and last_version in [self.version_selector.itemText(i) for i in range(self.version_selector.count())]:
+                    self.extract_checkbox.setChecked(
+                        settings.get("extract_game_en", False)
+                    )
+                    self.cheat_menu_checkbox.setChecked(
+                        settings.get("add_cheat_menu", False)
+                    )
+                    self.optimize_space_checkbox.setChecked(
+                        settings.get("optimize_space", False)
+                    )
+                    self.disable_protection_checkbox.setChecked(
+                        settings.get("disable_protection", False)
+                    )
+                    self.getpixel_patch_checkbox.setChecked(
+                        settings.get("patch_getpixel", True)
+                    )
+                    last_version = settings.get("last_selected_version")
+                    if last_version and last_version in [
+                        self.version_selector.itemText(i)
+                        for i in range(self.version_selector.count())
+                    ]:
                         self.version_selector.setCurrentText(last_version)
-                    self.last_selected_folder = settings.get('last_selected_folder', os.path.expanduser("~/Downloads"))
+                    self.last_selected_folder = settings.get(
+                        "last_selected_folder", os.path.expanduser("~/Downloads")
+                    )
                     global config_version
-                    config_version = settings.get('launcher_version', "")
+                    config_version = settings.get("launcher_version", "")
                     global last_commit_sha
-                    last_commit_sha = settings.get('last_commit_sha', "")
+                    last_commit_sha = settings.get("last_commit_sha", "")
                     global last_build_number
-                    last_build_number = settings.get('last_build_number', 0)
+                    last_build_number = settings.get("last_build_number", 0)
                     self.update_selected_folder_label()
             except Exception as e:
                 logging.error("Failed to load settings: %s", str(e))
@@ -321,26 +553,34 @@ class RPGMLauncher(QMainWindow):
 
     def save_settings(self):
         settings = {
-            'extract_game_en': self.extract_checkbox.isChecked(),
-            'add_cheat_menu': self.cheat_menu_checkbox.isChecked(),
-            'optimize_space': self.optimize_space_checkbox.isChecked(),
-            'disable_protection': self.disable_protection_checkbox.isChecked(),
-            'patch_getpixel': self.getpixel_patch_checkbox.isChecked(),
-            'last_selected_version': self.version_selector.currentText(),
-            'last_selected_folder': self.last_selected_folder,
-            'launcher_version': current_version,
-            'last_commit_sha': last_commit_sha,
-            'last_build_number': last_build_number
+            "extract_game_en": self.extract_checkbox.isChecked(),
+            "add_cheat_menu": self.cheat_menu_checkbox.isChecked(),
+            "optimize_space": self.optimize_space_checkbox.isChecked(),
+            "disable_protection": self.disable_protection_checkbox.isChecked(),
+            "patch_getpixel": self.getpixel_patch_checkbox.isChecked(),
+            "last_selected_version": self.version_selector.currentText(),
+            "last_selected_folder": self.last_selected_folder,
+            "launcher_version": current_version,
+            "last_commit_sha": last_commit_sha,
+            "last_build_number": last_build_number,
         }
-        with open(self.SETTINGS_FILE, 'w') as file:
+        with open(self.SETTINGS_FILE, "w") as file:
             json.dump(settings, file, indent=4)
-    
+
     # Remove old configuration files every update
     def remove_configs(self):
-        enabled_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json")
-        advanced_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json")
-        easyrpg_enabled_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json")
-        easyrpg_advanced_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json")
+        enabled_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json"
+        )
+        advanced_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json"
+        )
+        easyrpg_enabled_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"
+        )
+        easyrpg_advanced_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"
+        )
         if os.path.exists(enabled_settings_file):
             os.remove(enabled_settings_file)
         if os.path.exists(advanced_settings_file):
@@ -362,26 +602,33 @@ class RPGMLauncher(QMainWindow):
         scroll_layout = QVBoxLayout(scroll_content)
         scroll_area.setWidget(scroll_content)
 
-        enabled_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json")
-        advanced_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json")
+        enabled_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json"
+        )
+        advanced_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json"
+        )
 
         if not os.path.exists(enabled_settings_file):
-            with open(enabled_settings_file, 'w') as file:
+            with open(enabled_settings_file, "w") as file:
                 json.dump(default_enabled_settings, file, indent=4)
             logging.info("Created enabled-mkxpz-settings.json with default values.")
-        
+
         if not os.path.exists(advanced_settings_file):
-            with open(advanced_settings_file, 'w') as file:
+            with open(advanced_settings_file, "w") as file:
                 json.dump(default_advanced_settings, file, indent=4)
             logging.info("Created mkxpz-advanced.json with default values.")
 
-        with open(enabled_settings_file, 'r') as file:
+        with open(enabled_settings_file, "r") as file:
             enabled_settings = json.load(file)
-        
-        with open(advanced_settings_file, 'r') as file:
+
+        with open(advanced_settings_file, "r") as file:
             advanced_settings = json.load(file)
 
-        required_box = QGroupBox("Required Options, leave blank for default (except rgssVersion which should be 0)", dialog)
+        required_box = QGroupBox(
+            "Required Options, leave blank for default (except rgssVersion which should be 0)",
+            dialog,
+        )
         required_layout = QFormLayout(required_box)
 
         optional_box = QGroupBox("Optional Options", dialog)
@@ -391,9 +638,14 @@ class RPGMLauncher(QMainWindow):
         for key, enabled in enabled_settings.items():
             # Place "Force" settings in the required box
             if enabled == "Force":
-                widget = self.create_setting_widget(advanced_settings[key], required_box)
+                widget = self.create_setting_widget(
+                    advanced_settings[key], required_box
+                )
                 required_layout.addRow(f"{key}:", widget)
-                self.settings_widgets[key] = {"widget": widget, "enabled_checkbox": None}
+                self.settings_widgets[key] = {
+                    "widget": widget,
+                    "enabled_checkbox": None,
+                }
             else:
                 group_box = QGroupBox(key, dialog)
                 group_layout = QFormLayout(group_box)
@@ -401,12 +653,17 @@ class RPGMLauncher(QMainWindow):
                 enabled_checkbox = QCheckBox("Enabled", group_box)
                 enabled_checkbox.setChecked(enabled == "True")
                 group_layout.addRow(enabled_checkbox)
-                enabled_checkbox.stateChanged.connect(partial(self.update_enabled_state, key, enabled_checkbox))
+                enabled_checkbox.stateChanged.connect(
+                    partial(self.update_enabled_state, key, enabled_checkbox)
+                )
 
                 widget = self.create_setting_widget(advanced_settings[key], group_box)
                 group_layout.addRow("Value:", widget)
 
-                self.settings_widgets[key] = {"widget": widget, "enabled_checkbox": enabled_checkbox}
+                self.settings_widgets[key] = {
+                    "widget": widget,
+                    "enabled_checkbox": enabled_checkbox,
+                }
                 optional_layout.addWidget(group_box)
 
         scroll_layout.addWidget(required_box)
@@ -415,7 +672,11 @@ class RPGMLauncher(QMainWindow):
         buttons_layout = QHBoxLayout()
         save_button = QPushButton("Save", dialog)
         reset_button = QPushButton("Reset", dialog)
-        save_button.clicked.connect(lambda: self.save_mkxpz_advanced_settings(enabled_settings_file, advanced_settings_file))
+        save_button.clicked.connect(
+            lambda: self.save_mkxpz_advanced_settings(
+                enabled_settings_file, advanced_settings_file
+            )
+        )
         reset_button.clicked.connect(self.reset_mkxpz_advanced_settings)
 
         buttons_layout.addWidget(save_button)
@@ -427,7 +688,7 @@ class RPGMLauncher(QMainWindow):
         dialog.setLayout(dialog_layout)
 
         dialog.exec()
-    
+
     def open_easyrpg_advanced_settings(self):
         dialog = QDialog(self)
         dialog.setWindowTitle("EasyRPG Advanced Settings")
@@ -440,23 +701,27 @@ class RPGMLauncher(QMainWindow):
         scroll_layout = QVBoxLayout(scroll_content)
         scroll_area.setWidget(scroll_content)
 
-        enabled_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json")
-        advanced_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json")
+        enabled_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"
+        )
+        advanced_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"
+        )
 
         if not os.path.exists(enabled_settings_file):
-            with open(enabled_settings_file, 'w') as file:
+            with open(enabled_settings_file, "w") as file:
                 json.dump(default_enabled_easyrpg_settings, file, indent=4)
             logging.info("Created enabled-easyrpg-settings.json with default values.")
 
         if not os.path.exists(advanced_settings_file):
-            with open(advanced_settings_file, 'w') as file:
+            with open(advanced_settings_file, "w") as file:
                 json.dump(default_advanced_easyrpg_settings, file, indent=4)
             logging.info("Created easyrpg-advanced.json with default values.")
 
-        with open(enabled_settings_file, 'r') as file:
+        with open(enabled_settings_file, "r") as file:
             enabled_settings = json.load(file)
-        
-        with open(advanced_settings_file, 'r') as file:
+
+        with open(advanced_settings_file, "r") as file:
             advanced_settings = json.load(file)
 
         optional_box = QGroupBox("Options", dialog)
@@ -470,12 +735,17 @@ class RPGMLauncher(QMainWindow):
             enabled_checkbox = QCheckBox("Enabled", group_box)
             enabled_checkbox.setChecked(enabled == "True")
             group_layout.addRow(enabled_checkbox)
-            enabled_checkbox.stateChanged.connect(partial(self.update_enabled_state, key, enabled_checkbox))
+            enabled_checkbox.stateChanged.connect(
+                partial(self.update_enabled_state, key, enabled_checkbox)
+            )
 
             widget = self.create_setting_widget(advanced_settings[key], group_box)
             group_layout.addRow("Value:", widget)
 
-            self.settings_widgets[key] = {"widget": widget, "enabled_checkbox": enabled_checkbox}
+            self.settings_widgets[key] = {
+                "widget": widget,
+                "enabled_checkbox": enabled_checkbox,
+            }
             optional_layout.addWidget(group_box)
 
         scroll_layout.addWidget(optional_box)
@@ -483,7 +753,11 @@ class RPGMLauncher(QMainWindow):
         buttons_layout = QHBoxLayout()
         save_button = QPushButton("Save", dialog)
         reset_button = QPushButton("Reset", dialog)
-        save_button.clicked.connect(lambda: self.save_easyrpg_advanced_settings(enabled_settings_file, advanced_settings_file))
+        save_button.clicked.connect(
+            lambda: self.save_easyrpg_advanced_settings(
+                enabled_settings_file, advanced_settings_file
+            )
+        )
         reset_button.clicked.connect(self.reset_easyrpg_advanced_settings)
 
         buttons_layout.addWidget(save_button)
@@ -515,11 +789,12 @@ class RPGMLauncher(QMainWindow):
             widget.setPlainText(json.dumps(value, indent=4))
         return widget
 
-
     def update_enabled_state(self, key, checkbox):
         self.settings_widgets[key]["enabled_checkbox"].setChecked(checkbox.isChecked())
 
-    def save_mkxpz_advanced_settings(self, enabled_settings_file, advanced_settings_file):
+    def save_mkxpz_advanced_settings(
+        self, enabled_settings_file, advanced_settings_file
+    ):
         enabled_settings = {}
         advanced_settings = {}
 
@@ -527,10 +802,15 @@ class RPGMLauncher(QMainWindow):
             widget = controls["widget"]
             enabled_checkbox = controls["enabled_checkbox"]
 
-            if key in default_enabled_settings and default_enabled_settings[key] == "Force":
+            if (
+                key in default_enabled_settings
+                and default_enabled_settings[key] == "Force"
+            ):
                 enabled_settings[key] = "Force"
             elif enabled_checkbox:
-                enabled_settings[key] = "True" if enabled_checkbox.isChecked() else "False"
+                enabled_settings[key] = (
+                    "True" if enabled_checkbox.isChecked() else "False"
+                )
 
             # Save the current values of advanced settings based on widget types
             if isinstance(widget, QCheckBox):
@@ -551,11 +831,13 @@ class RPGMLauncher(QMainWindow):
                 except json.JSONDecodeError:
                     advanced_settings[key] = text.splitlines()
 
-        with open(enabled_settings_file, 'w') as file:
+        with open(enabled_settings_file, "w") as file:
             json.dump(enabled_settings, file, indent=4)
-        with open(advanced_settings_file, 'w') as file:
+        with open(advanced_settings_file, "w") as file:
             json.dump(advanced_settings, file, indent=4)
-        QMessageBox.information(self, "Settings Saved", "MKXP-Z settings have been saved successfully.")
+        QMessageBox.information(
+            self, "Settings Saved", "MKXP-Z settings have been saved successfully."
+        )
 
     def reset_mkxpz_advanced_settings(self):
         for key, controls in self.settings_widgets.items():
@@ -577,8 +859,10 @@ class RPGMLauncher(QMainWindow):
                     widget.setPlainText("\n".join(map(str, default_value)))
                 elif isinstance(default_value, dict):
                     widget.setPlainText(json.dumps(default_value, indent=4))
-    
-    def save_easyrpg_advanced_settings(self, enabled_settings_file, advanced_settings_file):
+
+    def save_easyrpg_advanced_settings(
+        self, enabled_settings_file, advanced_settings_file
+    ):
         enabled_settings = {}
         advanced_settings = {}
 
@@ -586,10 +870,15 @@ class RPGMLauncher(QMainWindow):
             widget = controls["widget"]
             enabled_checkbox = controls["enabled_checkbox"]
 
-            if key in default_enabled_easyrpg_settings and default_enabled_easyrpg_settings[key] == "Force":
+            if (
+                key in default_enabled_easyrpg_settings
+                and default_enabled_easyrpg_settings[key] == "Force"
+            ):
                 enabled_settings[key] = "Force"
             elif enabled_checkbox:
-                enabled_settings[key] = "True" if enabled_checkbox.isChecked() else "False"
+                enabled_settings[key] = (
+                    "True" if enabled_checkbox.isChecked() else "False"
+                )
 
             # Save the current values of advanced settings based on widget types
             if isinstance(widget, QCheckBox):
@@ -610,11 +899,13 @@ class RPGMLauncher(QMainWindow):
                 except json.JSONDecodeError:
                     advanced_settings[key] = text.splitlines()
 
-        with open(enabled_settings_file, 'w') as file:
+        with open(enabled_settings_file, "w") as file:
             json.dump(enabled_settings, file, indent=4)
-        with open(advanced_settings_file, 'w') as file:
+        with open(advanced_settings_file, "w") as file:
             json.dump(advanced_settings, file, indent=4)
-        QMessageBox.information(self, "Settings Saved", "EasyRPG settings have been saved successfully.")
+        QMessageBox.information(
+            self, "Settings Saved", "EasyRPG settings have been saved successfully."
+        )
 
     def reset_easyrpg_advanced_settings(self):
         for key, controls in self.settings_widgets.items():
@@ -642,118 +933,158 @@ class RPGMLauncher(QMainWindow):
         super().closeEvent(event)
 
     def check_nwjs_installed(self):
-        applications_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher")
-        return os.path.exists(applications_dir) and any(os.path.isdir(os.path.join(applications_dir, v)) for v in os.listdir(applications_dir))
+        applications_dir = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher"
+        )
+        return os.path.exists(applications_dir) and any(
+            os.path.isdir(os.path.join(applications_dir, v))
+            for v in os.listdir(applications_dir)
+        )
 
     def check_mkxpz_installed(self, warn=True):
-        mkxpz_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app")
+        mkxpz_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/Z-universal.app"
+        )
         if not os.path.exists(mkxpz_path):
             if not warn:
                 return False
-            install_response = QMessageBox.question(self, "MKXPZ Not Installed", 
-                                                    "MKXPZ is not installed. Would you like to install it now?", 
-                                                    QMessageBox.Yes | QMessageBox.No)
+            install_response = QMessageBox.question(
+                self,
+                "MKXPZ Not Installed",
+                "MKXPZ is not installed. Would you like to install it now?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if install_response == QMessageBox.Yes:
                 self.install_mkxpz()
                 return True
             else:
                 logging.info("MKXPZ installation canceled by the user.")
-                QMessageBox.information(self, "Installation Canceled", "MKXPZ installation was canceled.")
+                QMessageBox.information(
+                    self, "Installation Canceled", "MKXPZ installation was canceled."
+                )
                 return False
         return True
 
     # RTP stands for "Run Time Package", which is a set of resources required by RPG Maker VX Ace, VX, and XP games
     def check_RTP_installed(self):
-        rtp_folder = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/RTP")
+        rtp_folder = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/RTP"
+        )
         if not os.path.exists(rtp_folder):
-            install_response = QMessageBox.question(self, "RTP Not Found", 
-                                                    "RTP is required but not found. Would you like to install it now?", 
-                                                    QMessageBox.Yes | QMessageBox.No)
+            install_response = QMessageBox.question(
+                self,
+                "RTP Not Found",
+                "RTP is required but not found. Would you like to install it now?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if install_response == QMessageBox.Yes:
                 self.install_RTP()
                 return True
             else:
                 logging.info("RTP installation canceled by the user.")
-                QMessageBox.information(self, "Installation Canceled", "RTP installation was canceled.")
+                QMessageBox.information(
+                    self, "Installation Canceled", "RTP installation was canceled."
+                )
                 return False
         return True
-    
+
     # Soundfont is a file that contains audio samples used for MIDI playback in RPG Maker games
     def check_soundfont_installed(self):
-        soundfont_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/GMGSx.SF2")
+        soundfont_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/GMGSx.SF2"
+        )
         if not os.path.exists(soundfont_path):
             install_response = QMessageBox.question(
-                self, "Soundfont Not Found",
+                self,
+                "Soundfont Not Found",
                 "The required soundfont (GMGSx.SF2) is missing. Would you like to download it now?",
-                QMessageBox.Yes | QMessageBox.No
+                QMessageBox.Yes | QMessageBox.No,
             )
             if install_response == QMessageBox.Yes:
                 self.download_soundfont()
                 return os.path.exists(soundfont_path)
             else:
                 logging.info("Soundfont installation canceled by the user.")
-                QMessageBox.information(self, "Installation Canceled", "Soundfont installation was canceled.")
+                QMessageBox.information(
+                    self,
+                    "Installation Canceled",
+                    "Soundfont installation was canceled.",
+                )
                 return False
         return True
-    
+
     # Kawariki is a set of patches that improve compatability with RPG Maker games by supplying missing API functions
     def check_kawariki_installed(self):
-        kawariki_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/kawariki/preload.rb")
+        kawariki_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/kawariki/preload.rb"
+        )
         if not os.path.exists(kawariki_path):
             install_response = QMessageBox.question(
-                self, "Kawariki Patches Not Found", 
-                "Kawariki Patches are required but not found. Would you like to install it now?", 
-                QMessageBox.Yes | QMessageBox.No
+                self,
+                "Kawariki Patches Not Found",
+                "Kawariki Patches are required but not found. Would you like to install it now?",
+                QMessageBox.Yes | QMessageBox.No,
             )
             if install_response == QMessageBox.Yes:
                 self.download_kawariki_patches()
                 return True
             else:
                 logging.info("Kawariki installation canceled by the user.")
-                QMessageBox.information(self, "Installation Canceled", "Kawariki installation was canceled.")
+                QMessageBox.information(
+                    self, "Installation Canceled", "Kawariki installation was canceled."
+                )
                 return False
         return True
-    
+
     def check_easyrpg_installed(self, warn=True):
-        easyrpg_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app")
+        easyrpg_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app"
+        )
         if not os.path.exists(easyrpg_path):
             if not warn:
                 return False
             install_response = QMessageBox.question(
-                self, "EasyRPG Not Found", 
-                "EasyRPG is required but not found. Would you like to install it now?", 
-                QMessageBox.Yes | QMessageBox.No
+                self,
+                "EasyRPG Not Found",
+                "EasyRPG is required but not found. Would you like to install it now?",
+                QMessageBox.Yes | QMessageBox.No,
             )
             if install_response == QMessageBox.Yes:
                 self.install_easyrpg()
                 return True
             else:
                 logging.info("EasyRPG installation canceled by the user.")
-                QMessageBox.information(self, "Installation Canceled", "EasyRPG installation was canceled.")
+                QMessageBox.information(
+                    self, "Installation Canceled", "EasyRPG installation was canceled."
+                )
                 return False
         return True
-    
+
     def check_mkxpz_update(self):
         try:
-            response = requests.get("https://api.github.com/repos/m5kro/mkxp-z/commits/dev", timeout=1)
+            response = requests.get(
+                "https://api.github.com/repos/m5kro/mkxp-z/commits/dev", timeout=1
+            )
             response.raise_for_status()
             latest_commit = response.json()
             global latest_commit_sha
-            latest_commit_sha = latest_commit['sha']
+            latest_commit_sha = latest_commit["sha"]
             logging.info("Latest commit SHA: %s", latest_commit_sha)
             return latest_commit_sha
         except requests.RequestException as e:
             logging.error("Failed to fetch latest commit SHA: %s", str(e))
             global last_commit_sha
             return last_commit_sha
-    
+
     def check_easyrpg_update(self):
         try:
-            response = requests.get("https://ci.easyrpg.org/job/player-macos/api/json", timeout=1)
+            response = requests.get(
+                "https://ci.easyrpg.org/job/player-macos/api/json", timeout=1
+            )
             response.raise_for_status()
             data = response.json()
             global latest_build_number
-            latest_build_number = data['builds'][0]['number']
+            latest_build_number = data["builds"][0]["number"]
             logging.info("Latest EasyRPG build number: %d", latest_build_number)
             return latest_build_number
         except requests.RequestException as e:
@@ -761,16 +1092,21 @@ class RPGMLauncher(QMainWindow):
             global last_build_number
             return last_build_number
 
-
     # NWJS version selector
     def update_version_selector(self):
-        applications_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher")
+        applications_dir = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher"
+        )
         if os.path.exists(applications_dir):
             versions = [
-                v for v in os.listdir(applications_dir) 
-                if os.path.isdir(os.path.join(applications_dir, v)) and v.startswith("v")
+                v
+                for v in os.listdir(applications_dir)
+                if os.path.isdir(os.path.join(applications_dir, v))
+                and v.startswith("v")
             ]
-            versions.sort(key=lambda x: list(map(int, re.findall(r'\d+', x))), reverse=True)
+            versions.sort(
+                key=lambda x: list(map(int, re.findall(r"\d+", x))), reverse=True
+            )
 
             self.version_selector.clear()
             self.version_selector.addItems(versions)
@@ -785,11 +1121,13 @@ class RPGMLauncher(QMainWindow):
             self.select_button.setText("NWJS not installed")
 
     def select_folder(self):
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Game Folder", self.last_selected_folder)
+        folder_path = QFileDialog.getExistingDirectory(
+            self, "Select Game Folder", self.last_selected_folder
+        )
         if folder_path:
             self.last_selected_folder = folder_path
             logging.info("Selected folder path: %s", folder_path)
-            
+
             if self.check_package_json(folder_path):
                 logging.info("Package.json found in the selected folder.")
             elif self.check_game_ini(folder_path):
@@ -798,25 +1136,31 @@ class RPGMLauncher(QMainWindow):
                 logging.info("RTP_RT files found in the folder.")
             else:
                 logging.error("No RPG Maker files found in the selected folder.")
-                QMessageBox.critical(self, "Error", "No package.json, Game.ini, or RPG_RT files found in the selected folder.")
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "No package.json, Game.ini, or RPG_RT files found in the selected folder.",
+                )
         self.save_settings()
         self.update_selected_folder_label()
         self.check_start_game_button()
 
     def update_selected_folder_label(self):
         if self.last_selected_folder:
-            self.selected_folder_label.setText(f"Selected Folder: {self.truncate_path(self.last_selected_folder)}")
+            self.selected_folder_label.setText(
+                f"Selected Folder: {self.truncate_path(self.last_selected_folder)}"
+            )
         else:
             self.selected_folder_label.setText("No folder selected")
 
     def truncate_path(self, path, max_length=50):
         if len(path) > max_length:
-            return "..." + path[-(max_length - 3):]
+            return "..." + path[-(max_length - 3) :]
         return path
 
     def truncate_filename(self, filename, max_length=30):
         if len(filename) > max_length:
-            return filename[:max_length // 2] + "..." + filename[-(max_length // 2):]
+            return filename[: max_length // 2] + "..." + filename[-(max_length // 2) :]
         return filename
 
     def check_start_game_button(self):
@@ -826,36 +1170,94 @@ class RPGMLauncher(QMainWindow):
         else:
             self.start_game_button.setEnabled(False)
             self.export_button.setEnabled(False)
+        self.update_translate_button_state()
+
+    def update_translate_button_state(self):
+        enabled = False
+        if self.last_selected_folder:
+            try:
+                enabled = (
+                    translation.detect_game_layout(self.last_selected_folder)
+                    is not None
+                )
+            except Exception as exc:
+                logging.debug("Translation layout detection failed: %s", str(exc))
+        self.translate_button.setEnabled(enabled)
+
+    def open_translation_dialog(self):
+        if not self.last_selected_folder:
+            QMessageBox.information(self, "Translation", "Select a game folder first.")
+            return
+        try:
+            dialog = TranslationDialog(self, self.last_selected_folder)
+            dialog.exec()
+        except Exception as exc:
+            logging.exception("Failed to open translation dialog")
+            QMessageBox.critical(self, "Translation Error", str(exc))
+        finally:
+            self.update_translate_button_state()
+
+    def prepare_translation_for_launch(self, folder_path):
+        try:
+            result = translation.prepare_for_launch(folder_path)
+        except Exception as exc:
+            logging.error("Failed to prepare translation: %s", str(exc))
+            QMessageBox.warning(
+                self,
+                "Translation",
+                f"Could not prepare the translation. The game will launch untranslated.\n\n{exc}",
+            )
+            return False
+
+        for warning in getattr(result, "warnings", []) or []:
+            logging.warning("Translation: %s", warning)
+        if getattr(result, "status", "none") == "error":
+            logging.error(
+                "Translation preparation failed: %s", getattr(result, "message", "")
+            )
+            QMessageBox.warning(
+                self,
+                "Translation",
+                "The installed translation could not be prepared. "
+                "The game will launch untranslated.\n\n"
+                + (getattr(result, "message", "") or ""),
+            )
+            return False
+        return bool(getattr(result, "active", False))
 
     # Some MV and MZ games don't include a name inside package.json, so we patch it with a temporary name
     # This is a requirement for newer versions of NWJS to launch the game
     def check_package_json(self, folder_path):
-        file_path = os.path.join(folder_path, 'package.json')
+        file_path = os.path.join(folder_path, "package.json")
         if os.path.exists(file_path):
-            with open(file_path, 'rb') as file:
+            with open(file_path, "rb") as file:
                 raw_data = file.read()
                 result = chardet.detect(raw_data)
-                encoding = result['encoding']
+                encoding = result["encoding"]
 
-            with open(file_path, 'r', encoding=encoding) as file:
+            with open(file_path, "r", encoding=encoding) as file:
                 data = json.load(file)
 
-            if 'name' in data and data['name'].strip() == '':
-                data['name'] = 'tempname'
+            if "name" in data and data["name"].strip() == "":
+                data["name"] = "tempname"
                 logging.info("Updating package.json with temporary name 'tempname'.")
                 # Clear the tempname folder in ~/Library/Application Support/ so popup about version mismatch doesn't appear
                 logging.info("Clearing tempname folder in Application Support.")
-                tempname_folder = os.path.expanduser(f"~/Library/Application Support/tempname")
+                tempname_folder = os.path.expanduser(
+                    f"~/Library/Application Support/tempname"
+                )
                 if os.path.exists(tempname_folder):
                     try:
                         shutil.rmtree(tempname_folder, ignore_errors=True)
                         logging.info("tempname folder cleared successfully.")
                     except Exception as e:
                         logging.error(f"Error clearing tempname folder: {e}")
-            elif 'name' in data and data['name'].strip() != '':
+            elif "name" in data and data["name"].strip() != "":
                 logging.info(f"package.json already has a valid name: {data['name']}")
                 # Clear the possible named folder in ~/Library/Application Support/ so popup about version mismatch doesn't appear
-                name_folder = os.path.expanduser(f"~/Library/Application Support/{data['name']}")
+                name_folder = os.path.expanduser(
+                    f"~/Library/Application Support/{data['name']}"
+                )
                 if os.path.exists(name_folder):
                     try:
                         shutil.rmtree(name_folder, ignore_errors=True)
@@ -865,17 +1267,23 @@ class RPGMLauncher(QMainWindow):
 
             # Add "bg-script": "bg.js" if protection is enabled
             if not self.disable_protection_checkbox.isChecked():
-                data['bg-script'] = "bg.js"
-                logging.info("Protection enabled, adding bg-script entry to package.json.")
-            else: 
+                data["bg-script"] = "bg.js"
+                logging.info(
+                    "Protection enabled, adding bg-script entry to package.json."
+                )
+            else:
                 # If protection is disabled remove the bg-script entry
                 try:
-                    data.pop('bg-script', None)
-                    logging.info("Protection disabled, removing bg-script entry from package.json.")
+                    data.pop("bg-script", None)
+                    logging.info(
+                        "Protection disabled, removing bg-script entry from package.json."
+                    )
                 except Exception as e:
-                    logging.info("Protection already disabled, bg-script entry not found.")
+                    logging.info(
+                        "Protection already disabled, bg-script entry not found."
+                    )
 
-            with open(file_path, 'w', encoding=encoding) as file:
+            with open(file_path, "w", encoding=encoding) as file:
                 json.dump(data, file, indent=4)
 
             logging.info("JSON file updated successfully.")
@@ -888,7 +1296,7 @@ class RPGMLauncher(QMainWindow):
     def check_game_ini(self, folder_path):
         game_ini_path = os.path.join(folder_path, "Game.ini")
         return os.path.exists(game_ini_path)
-    
+
     # Check for any files named RTP_RT to indicate it's RPG 2000 or RPG 2003
     def check_RTP_RT(self, folder_path):
         if os.path.exists(folder_path):
@@ -897,14 +1305,14 @@ class RPGMLauncher(QMainWindow):
                 if os.path.isfile(full_path) and file.startswith("RPG_RT"):
                     return True
         else:
-            logging.error(f"Folder does not exist: {folder_path}")    
+            logging.error(f"Folder does not exist: {folder_path}")
         return False
-    
+
     # This function checks the RTP value in the Game.ini file or RGSS DLL files to set the correct RTP version
     def get_rtp_value(self, folder_path):
         game_ini_path = os.path.join(folder_path, "Game.ini")
         try:
-            with open(game_ini_path, 'r') as file:
+            with open(game_ini_path, "r") as file:
                 lines = file.readlines()
                 for line in lines:
                     match = re.match(r"\s*rtp\s*=\s*(.*)", line, re.IGNORECASE)
@@ -917,7 +1325,9 @@ class RPGMLauncher(QMainWindow):
                         elif match.group(1).strip().lower() == "rpgvxace":
                             return "RPGVXace", 3
                         else:
-                            logging.warning(f"Unknown RTP value found in Game.ini: {match.group(1)}")
+                            logging.warning(
+                                f"Unknown RTP value found in Game.ini: {match.group(1)}"
+                            )
                 for line in lines:
                     match = re.match(r"\s*library\s*=\s*(.*)", line, re.IGNORECASE)
                     if match:
@@ -932,11 +1342,13 @@ class RPGMLauncher(QMainWindow):
                             elif rtp_value == 3:
                                 return "RPGVXace", 3
                             else:
-                                logging.warning(f"Unknown RTP value found in Game.ini: {match.group(1)[0]}")
+                                logging.warning(
+                                    f"Unknown RTP value found in Game.ini: {match.group(1)[0]}"
+                                )
             logging.warning("RTP value not found in Game.ini, looking for dll files.")
         except FileNotFoundError:
             logging.error(f"Game.ini file not found in the folder: {folder_path}")
-        
+
         try:
             for file in os.listdir(folder_path):
                 if file.startswith("RGSS") and file.endswith(".dll"):
@@ -951,8 +1363,12 @@ class RPGMLauncher(QMainWindow):
                         elif rtp_value == 3:
                             return "RPGVXace", 3
                         else:
-                            logging.warning(f"Unknown RTP value found in DLL file: {match.group(1)[0]}")
-            logging.warning("No RGSS DLL files found in the game folder, checking System folder.")
+                            logging.warning(
+                                f"Unknown RTP value found in DLL file: {match.group(1)[0]}"
+                            )
+            logging.warning(
+                "No RGSS DLL files found in the game folder, checking System folder."
+            )
         except FileNotFoundError as e:
             logging.error(f"Game folder error: {e}")
 
@@ -971,8 +1387,12 @@ class RPGMLauncher(QMainWindow):
                         elif rtp_value == 3:
                             return "RPGVXace", 3
                         else:
-                            logging.warning(f"Unknown RTP value found in System folder: {match.group(1)[0]}")
-            logging.warning("No RGSS DLL files found in the System folder, assuming Standard RTP.")
+                            logging.warning(
+                                f"Unknown RTP value found in System folder: {match.group(1)[0]}"
+                            )
+            logging.warning(
+                "No RGSS DLL files found in the System folder, assuming Standard RTP."
+            )
         except FileNotFoundError as e:
             logging.warning(f"System folder not found in the folder: {e}")
             logging.info("Assuming Standard RTP.")
@@ -1013,9 +1433,13 @@ class RPGMLauncher(QMainWindow):
 
     def add_protection_script(self, folder_path):
         # Copy the protection scripts to the game folder
-        shutil.copy(os.path.join(os.path.dirname(__file__), 'bg.js'), folder_path)
-        shutil.copy(os.path.join(os.path.dirname(__file__), 'disable-child.js'), folder_path)
-        shutil.copy(os.path.join(os.path.dirname(__file__), 'disable-net.js'), folder_path)
+        shutil.copy(os.path.join(os.path.dirname(__file__), "bg.js"), folder_path)
+        shutil.copy(
+            os.path.join(os.path.dirname(__file__), "disable-child.js"), folder_path
+        )
+        shutil.copy(
+            os.path.join(os.path.dirname(__file__), "disable-net.js"), folder_path
+        )
         logging.info("Protection scripts added to the game folder.")
 
     def patch_rpgm_getpixel(self, game_path, enable=True):
@@ -1034,7 +1458,13 @@ class RPGMLauncher(QMainWindow):
 
         When disabled, removes the guard if it was previously inserted (with or without markers).
         """
-        result = {"ok": False, "changed": False, "patched": False, "js_file": None, "message": ""}
+        result = {
+            "ok": False,
+            "changed": False,
+            "patched": False,
+            "js_file": None,
+            "message": "",
+        }
 
         if not game_path or not os.path.isdir(game_path):
             result["message"] = "Invalid game path."
@@ -1050,7 +1480,9 @@ class RPGMLauncher(QMainWindow):
             js_dir = js_candidate_2
 
         if not js_dir:
-            result["message"] = "Could not find a 'js' or 'www/js' folder in the game directory."
+            result["message"] = (
+                "Could not find a 'js' or 'www/js' folder in the game directory."
+            )
             return result
 
         # Pick core file (prefer MZ)
@@ -1063,7 +1495,9 @@ class RPGMLauncher(QMainWindow):
             core_file = mv_core
 
         if not core_file:
-            result["message"] = "Could not find rmmz_core.js or rpg_core.js in the JS folder."
+            result["message"] = (
+                "Could not find rmmz_core.js or rpg_core.js in the JS folder."
+            )
             return result
 
         result["js_file"] = core_file
@@ -1084,7 +1518,9 @@ class RPGMLauncher(QMainWindow):
         )
         m = sig_re.search(raw)
         if not m:
-            result["message"] = "Could not locate 'Bitmap.prototype.getPixel = function (x, y) {' in the core JS file."
+            result["message"] = (
+                "Could not locate 'Bitmap.prototype.getPixel = function (x, y) {' in the core JS file."
+            )
             return result
 
         # Compute insertion/removal position: immediately after the signature line's newline
@@ -1107,7 +1543,14 @@ class RPGMLauncher(QMainWindow):
         # Fast path: already patched (marker-based)
         if RPGM_GETPIXEL_PATCH_BEGIN in raw and RPGM_GETPIXEL_PATCH_END in raw:
             if enable:
-                result.update({"ok": True, "changed": False, "patched": True, "message": "Already patched."})
+                result.update(
+                    {
+                        "ok": True,
+                        "changed": False,
+                        "patched": True,
+                        "message": "Already patched.",
+                    }
+                )
                 return result
             # Disable -> remove marker block
             begin_idx = raw.find(RPGM_GETPIXEL_PATCH_BEGIN)
@@ -1126,17 +1569,31 @@ class RPGMLauncher(QMainWindow):
                 if new_raw != raw:
                     try:
                         Path(core_file).write_text(new_raw, encoding="utf-8")
-                        result.update({"ok": True, "changed": True, "patched": False, "message": "Patch removed."})
+                        result.update(
+                            {
+                                "ok": True,
+                                "changed": True,
+                                "patched": False,
+                                "message": "Patch removed.",
+                            }
+                        )
                     except Exception as e:
                         result["message"] = f"Failed to write core JS file: {e}"
                     return result
 
-            result.update({"ok": True, "changed": False, "patched": False, "message": "Patch markers found but could not remove cleanly."})
+            result.update(
+                {
+                    "ok": True,
+                    "changed": False,
+                    "patched": False,
+                    "message": "Patch markers found but could not remove cleanly.",
+                }
+            )
             return result
 
         # Marker-less patch detection/removal right after the signature line
         # (Only inspect a small window after the signature to avoid deleting unrelated code.)
-        window = raw[after_sig: after_sig + 600]
+        window = raw[after_sig : after_sig + 600]
 
         snippet_re = re.compile(
             r"^\s*if\s*\(\s*!Number\.isFinite\(x\)\s*\|\|\s*!Number\.isFinite\(y\)\s*\)\s*\{\s*\r?\n"
@@ -1148,14 +1605,28 @@ class RPGMLauncher(QMainWindow):
 
         if enable:
             if snippet_m:
-                result.update({"ok": True, "changed": False, "patched": True, "message": "Already patched (no markers)."})
+                result.update(
+                    {
+                        "ok": True,
+                        "changed": False,
+                        "patched": True,
+                        "message": "Already patched (no markers).",
+                    }
+                )
                 return result
 
             # Insert patch block
             new_raw = raw[:after_sig] + patch_block + raw[after_sig:]
             try:
                 Path(core_file).write_text(new_raw, encoding="utf-8")
-                result.update({"ok": True, "changed": True, "patched": True, "message": "Patch applied."})
+                result.update(
+                    {
+                        "ok": True,
+                        "changed": True,
+                        "patched": True,
+                        "message": "Patch applied.",
+                    }
+                )
             except Exception as e:
                 result["message"] = f"Failed to write core JS file: {e}"
             return result
@@ -1168,12 +1639,26 @@ class RPGMLauncher(QMainWindow):
             new_raw = raw[:start] + raw[end:]
             try:
                 Path(core_file).write_text(new_raw, encoding="utf-8")
-                result.update({"ok": True, "changed": True, "patched": False, "message": "Patch removed (no markers)."})
+                result.update(
+                    {
+                        "ok": True,
+                        "changed": True,
+                        "patched": False,
+                        "message": "Patch removed (no markers).",
+                    }
+                )
             except Exception as e:
                 result["message"] = f"Failed to write core JS file: {e}"
             return result
 
-        result.update({"ok": True, "changed": False, "patched": False, "message": "No patch found; nothing to remove."})
+        result.update(
+            {
+                "ok": True,
+                "changed": False,
+                "patched": False,
+                "message": "No patch found; nothing to remove.",
+            }
+        )
         return result
 
     def start_game(self):
@@ -1182,22 +1667,28 @@ class RPGMLauncher(QMainWindow):
             logging.error("No folder selected.")
             QMessageBox.critical(self, "Error", "No folder selected.")
             return
-        
+
         # Giving ownership of the game folder to the current user to bypass permission issues because apple can't let us have nice things
-        logging.info("Setting you as owner of the game folder and permissions to 700 (You can read, write, execute).")
+        logging.info(
+            "Setting you as owner of the game folder and permissions to 700 (You can read, write, execute)."
+        )
         try:
             subprocess.run(["chown", "-R", str(os.getuid()), folder_path], check=True)
             logging.info("Changed ownership of the folder to the current user.")
         except subprocess.CalledProcessError as e:
             logging.error("Failed to change ownership of the folder: %s", str(e))
-            QMessageBox.critical(self, "Error", f"Failed to change ownership of the folder: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to change ownership of the folder: {str(e)}"
+            )
             return
         try:
             subprocess.run(["chmod", "-R", "700", folder_path], check=True)
             logging.info("Changed permissions of the folder to 700.")
         except subprocess.CalledProcessError as e:
             logging.error("Failed to change permissions of the folder: %s", str(e))
-            QMessageBox.critical(self, "Error", f"Failed to change permissions of the folder: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to change permissions of the folder: {str(e)}"
+            )
             return
 
         if self.check_package_json(folder_path):
@@ -1213,18 +1704,25 @@ class RPGMLauncher(QMainWindow):
                 self.add_cheat_menu(folder_path)
             else:
                 self.remove_cheat_menu(folder_path)
-            
+
             if not self.disable_protection_checkbox.isChecked():
                 self.add_protection_script(folder_path)
 
-            patch_res = self.patch_rpgm_getpixel(folder_path, enable=self.getpixel_patch_checkbox.isChecked())
+            patch_res = self.patch_rpgm_getpixel(
+                folder_path, enable=self.getpixel_patch_checkbox.isChecked()
+            )
             if not patch_res.get("ok"):
                 logging.warning("getPixel patch: %s", patch_res.get("message"))
                 if self.getpixel_patch_checkbox.isChecked():
-                    QMessageBox.warning(self, "getPixel patch", f"Could not apply getPixel patch:\n{patch_res.get('message')}, Not an RPG maker game?")
+                    QMessageBox.warning(
+                        self,
+                        "getPixel patch",
+                        f"Could not apply getPixel patch:\n{patch_res.get('message')}, Not an RPG maker game?",
+                    )
             else:
                 logging.info("getPixel patch: %s", patch_res.get("message"))
 
+            self.prepare_translation_for_launch(folder_path)
             self.launch_nwjs_game(folder_path)
         elif self.check_game_ini(folder_path):
             logging.info("Launching game using MKXPZ.")
@@ -1233,8 +1731,14 @@ class RPGMLauncher(QMainWindow):
             logging.info("Launching game using EasyRPG.")
             self.launch_easyrpg_game(folder_path)
         else:
-            logging.error("No Package.json, Game.ini, or RTP_RT files found in the folder.")
-            QMessageBox.critical(self, "Error", "No valid game file (package.json, Game.ini, or RTP_RT) found in the selected folder.")
+            logging.error(
+                "No Package.json, Game.ini, or RTP_RT files found in the folder."
+            )
+            QMessageBox.critical(
+                self,
+                "Error",
+                "No valid game file (package.json, Game.ini, or RTP_RT) found in the selected folder.",
+            )
 
     def launch_nwjs_game(self, folder_path):
         selected_version = self.version_selector.currentText()
@@ -1242,7 +1746,7 @@ class RPGMLauncher(QMainWindow):
             logging.error("No NWJS version selected.")
             QMessageBox.critical(self, "Error", "No NWJS version selected.")
             return
-        
+
         logging.info("Cleaning up nwjs temporary files.")
         temp_dir = os.path.expanduser("~/Library/Application Support/nwjs")
         if os.path.exists(temp_dir):
@@ -1252,15 +1756,25 @@ class RPGMLauncher(QMainWindow):
             except Exception as e:
                 logging.error(f"Error cleaning up NWJS temporary files: {e}")
 
-        nwjs_dir = os.path.expanduser(f"~/Library/Application Support/RPGM-Launcher/{selected_version}")
+        nwjs_dir = os.path.expanduser(
+            f"~/Library/Application Support/RPGM-Launcher/{selected_version}"
+        )
         nwjs_path = os.path.join(nwjs_dir, "nwjs.app/Contents/MacOS/nwjs")
 
         # Older versions of NWJS don't have native arm so rosetta is required
         run_with_rosetta_file = os.path.join(nwjs_dir, "run-with-rosetta")
         if os.path.exists(run_with_rosetta_file):
-            subprocess.Popen(["arch", "-x86_64", nwjs_path, folder_path], stdout=open(LOG_FILE, 'a'), stderr=subprocess.STDOUT)
+            subprocess.Popen(
+                ["arch", "-x86_64", nwjs_path, folder_path],
+                stdout=open(LOG_FILE, "a"),
+                stderr=subprocess.STDOUT,
+            )
         else:
-            subprocess.Popen([nwjs_path, folder_path], stdout=open(LOG_FILE, 'a'), stderr=subprocess.STDOUT)
+            subprocess.Popen(
+                [nwjs_path, folder_path],
+                stdout=open(LOG_FILE, "a"),
+                stderr=subprocess.STDOUT,
+            )
         logging.info("Game launched using NWJS version %s.", selected_version)
         logging.info("NWJS log:")
 
@@ -1270,48 +1784,69 @@ class RPGMLauncher(QMainWindow):
             logging.info("Checking for MKXP-Z updates.")
             logging.info("Last commit SHA: %s", last_commit_sha)
             if last_commit_sha != self.check_mkxpz_update():
-                update_response = QMessageBox.question(self, "MKXP-Z Update Available",
-                                                       "A new update is available for MKXP-Z. Would you like to update now?",
-                                                       QMessageBox.Yes | QMessageBox.No)
+                update_response = QMessageBox.question(
+                    self,
+                    "MKXP-Z Update Available",
+                    "A new update is available for MKXP-Z. Would you like to update now?",
+                    QMessageBox.Yes | QMessageBox.No,
+                )
                 if update_response == QMessageBox.Yes:
                     self.install_mkxpz()
-                    
-        if not self.check_mkxpz_installed() or not self.check_RTP_installed() or not self.check_soundfont_installed() or not self.check_kawariki_installed():
+
+        if (
+            not self.check_mkxpz_installed()
+            or not self.check_RTP_installed()
+            or not self.check_soundfont_installed()
+            or not self.check_kawariki_installed()
+        ):
             return
 
-        enabled_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json")
-        advanced_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json")
+        enabled_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json"
+        )
+        advanced_settings_file = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json"
+        )
 
         # Apply default settings if the files do not exist
         if not os.path.exists(enabled_settings_file):
-            with open(enabled_settings_file, 'w') as file:
+            with open(enabled_settings_file, "w") as file:
                 json.dump(default_enabled_settings, file, indent=4)
             logging.info("Created enabled-mkxpz-settings.json with default values.")
 
         if not os.path.exists(advanced_settings_file):
-            with open(advanced_settings_file, 'w') as file:
+            with open(advanced_settings_file, "w") as file:
                 json.dump(default_advanced_settings, file, indent=4)
             logging.info("Created mkxpz-advanced.json with default values.")
 
         # Load the advanced settings
-        with open(enabled_settings_file, 'r') as file:
+        with open(enabled_settings_file, "r") as file:
             enabled_settings = json.load(file)
 
-        with open(advanced_settings_file, 'r') as file:
+        with open(advanced_settings_file, "r") as file:
             advanced_settings = json.load(file)
 
-        mkxpz_json_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/Game/mkxp.json")
-        soundfont_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/GMGSx.SF2")
+        mkxpz_json_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/Game/mkxp.json"
+        )
+        soundfont_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/GMGSx.SF2"
+        )
         rtp_value, rgss_version = self.get_rtp_value(folder_path)
-        rtp_path = os.path.join(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/RTP"), rtp_value)
-        kawariki_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/kawariki/preload.rb")
+        rtp_path = os.path.join(
+            os.path.expanduser("~/Library/Application Support/RPGM-Launcher/RTP"),
+            rtp_value,
+        )
+        kawariki_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/kawariki/preload.rb"
+        )
 
         if os.path.exists(mkxpz_json_path):
-            with open(mkxpz_json_path, 'rb') as file:
+            with open(mkxpz_json_path, "rb") as file:
                 raw_data = file.read()
                 result = chardet.detect(raw_data)
-                encoding = result['encoding']
-            with open(mkxpz_json_path, 'r', encoding=encoding) as file:
+                encoding = result["encoding"]
+            with open(mkxpz_json_path, "r", encoding=encoding) as file:
                 mkxp_config = json.load(file)
         else:
             mkxp_config = {}
@@ -1335,11 +1870,11 @@ class RPGMLauncher(QMainWindow):
 
         # Save the updated configuration and launch the game
         try:
-            with open(mkxpz_json_path, 'rb') as file:
+            with open(mkxpz_json_path, "rb") as file:
                 raw_data = file.read()
                 result = chardet.detect(raw_data)
-                encoding = result['encoding']
-            with open(mkxpz_json_path, 'w', encoding=encoding) as file:
+                encoding = result["encoding"]
+            with open(mkxpz_json_path, "w", encoding=encoding) as file:
                 json.dump(mkxp_config, file, indent=4)
             logging.info("Updated mkxp.json with enabled settings.")
             logging.info("Full MKXP-Z configuration: %s", mkxp_config)
@@ -1348,41 +1883,72 @@ class RPGMLauncher(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to update mkxp.json: {str(e)}")
             return
 
-        mkxpz_executable_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/MacOS/Z-universal")
+        mkxpz_executable_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/MacOS/Z-universal"
+        )
         try:
-            subprocess.Popen([mkxpz_executable_path, folder_path], stdout=open(LOG_FILE, 'a'), stderr=subprocess.STDOUT)
+            subprocess.Popen(
+                [mkxpz_executable_path, folder_path],
+                stdout=open(LOG_FILE, "a"),
+                stderr=subprocess.STDOUT,
+            )
             logging.info("MKXPZ game launched from folder: %s", folder_path)
             logging.info("MKXPZ log:")
         except Exception as e:
             logging.error("Failed to launch MKXPZ: %s", str(e))
             QMessageBox.critical(self, "Error", f"Failed to launch MKXPZ: {str(e)}")
-    
+
     def launch_easyrpg_game(self, folder_path):
         if self.check_easyrpg_installed(warn=False):
             global last_build_number
             logging.info("Checking for EasyRPG updates.")
             logging.info("Last build number: %d", last_build_number)
             if last_build_number != self.check_easyrpg_update():
-                update_response = QMessageBox.question(self, "EasyRPG Update Available",
-                                                       "A new update is available for EasyRPG Player. Would you like to update now?",
-                                                       QMessageBox.Yes | QMessageBox.No)
+                update_response = QMessageBox.question(
+                    self,
+                    "EasyRPG Update Available",
+                    "A new update is available for EasyRPG Player. Would you like to update now?",
+                    QMessageBox.Yes | QMessageBox.No,
+                )
                 if update_response == QMessageBox.Yes:
                     self.uninstall_easyrpg(popup=False)
                     self.install_easyrpg()
 
-        easyrpg_executable_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app/Contents/MacOS/EasyRPG Player")
+        easyrpg_executable_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app/Contents/MacOS/EasyRPG Player"
+        )
         if not self.check_easyrpg_installed():
             logging.error("EasyRPG Player not found at %s", easyrpg_executable_path)
-            QMessageBox.critical(self, "Error", "EasyRPG Player not found. Please install it first.")
+            QMessageBox.critical(
+                self, "Error", "EasyRPG Player not found. Please install it first."
+            )
             return
-        
+
         extra_options = []
 
-        if os.path.isfile(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json")) and os.path.isfile(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json")):
-            with open(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"), 'r') as file:
+        if os.path.isfile(
+            os.path.expanduser(
+                "~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"
+            )
+        ) and os.path.isfile(
+            os.path.expanduser(
+                "~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"
+            )
+        ):
+            with open(
+                os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"
+                ),
+                "r",
+            ) as file:
                 enabled_settings = json.load(file)
 
-            with open(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"), 'r') as file:
+            with open(
+                os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"
+                ),
+                "r",
+            ) as file:
                 advanced_settings = json.load(file)
 
             for key, enabled in enabled_settings.items():
@@ -1392,17 +1958,36 @@ class RPGMLauncher(QMainWindow):
                     elif advanced_settings[key]:
                         extra_options.append(f"{key}")
                         extra_options.append(advanced_settings[key])
-        
+
         try:
             # EasyRPG only has an intel version, so Rosetta is required on Apple Silicon Macs
             arch = "arm64" if platform.machine() == "arm64" else "x64"
             if arch == "arm64":
-                subprocess.Popen(["arch", "-x86_64", easyrpg_executable_path, "--window", "--project-path", folder_path] + extra_options, stdout=open(LOG_FILE, 'a'), stderr=subprocess.STDOUT)
-                logging.info("EasyRPG game launched from folder: %s using Rosetta", folder_path)
+                subprocess.Popen(
+                    [
+                        "arch",
+                        "-x86_64",
+                        easyrpg_executable_path,
+                        "--window",
+                        "--project-path",
+                        folder_path,
+                    ]
+                    + extra_options,
+                    stdout=open(LOG_FILE, "a"),
+                    stderr=subprocess.STDOUT,
+                )
+                logging.info(
+                    "EasyRPG game launched from folder: %s using Rosetta", folder_path
+                )
                 logging.info("Appended options: %s", extra_options)
                 logging.info("EasyRPG log:")
             else:
-                subprocess.Popen([easyrpg_executable_path, "--window", "--project-path", folder_path] + extra_options, stdout=open(LOG_FILE, 'a'), stderr=subprocess.STDOUT)
+                subprocess.Popen(
+                    [easyrpg_executable_path, "--window", "--project-path", folder_path]
+                    + extra_options,
+                    stdout=open(LOG_FILE, "a"),
+                    stderr=subprocess.STDOUT,
+                )
                 logging.info("EasyRPG game launched from folder: %s", folder_path)
                 logging.info("Appended options: %s", extra_options)
                 logging.info("EasyRPG log:")
@@ -1415,7 +2000,9 @@ class RPGMLauncher(QMainWindow):
         if not ok:
             return
 
-        destination_folder = QFileDialog.getExistingDirectory(self, "Select Destination Folder")
+        destination_folder = QFileDialog.getExistingDirectory(
+            self, "Select Destination Folder"
+        )
         if not destination_folder:
             return
 
@@ -1437,7 +2024,9 @@ class RPGMLauncher(QMainWindow):
                     QMessageBox.critical(self, "Error", "No NWJS version selected.")
                     return
 
-                nwjs_dir = os.path.expanduser(f"~/Library/Application Support/RPGM-Launcher/{selected_version}")
+                nwjs_dir = os.path.expanduser(
+                    f"~/Library/Application Support/RPGM-Launcher/{selected_version}"
+                )
                 nwjs_app_src = os.path.join(nwjs_dir, "nwjs.app")
                 nwjs_app_dst = os.path.join(destination_folder, app_name + ".app")
 
@@ -1450,30 +2039,74 @@ class RPGMLauncher(QMainWindow):
                 if self.optimize_space_checkbox.isChecked():
                     self.optimize_space()
 
+                translation_active = False
+                translation_applicable = False
+                try:
+                    translation_applicable = (
+                        translation.detect_game_layout(folder_path) is not None
+                    )
+                    if translation_applicable:
+                        launch_result = translation.prepare_for_launch(folder_path)
+                        translation_active = bool(
+                            getattr(launch_result, "active", False)
+                        )
+                        if getattr(launch_result, "status", "none") == "error":
+                            QMessageBox.critical(
+                                self,
+                                "Translation Export Error",
+                                "The installed translation could not be prepared for export:\n\n"
+                                + (getattr(launch_result, "message", "") or ""),
+                            )
+                            return
+                except Exception as exc:
+                    logging.exception("Failed to prepare translation for export")
+                    QMessageBox.critical(
+                        self,
+                        "Translation Export Error",
+                        f"Failed to prepare translation for export:\n{exc}",
+                    )
+                    return
+
                 # Count files while skipping anything inside the destination .app
                 total_files = 0
-                for root, dirs, files in os.walk(self.last_selected_folder, topdown=True):
+                for root, dirs, files in os.walk(
+                    self.last_selected_folder, topdown=True
+                ):
                     # prune traversal into the destination app bundle (avoids infinite loop)
-                    dirs[:] = [d for d in dirs if not _is_within(os.path.join(root, d), nwjs_app_dst)]
+                    dirs[:] = [
+                        d
+                        for d in dirs
+                        if not _is_within(os.path.join(root, d), nwjs_app_dst)
+                    ]
                     # if somehow root itself is inside the app bundle, skip it
                     if _is_within(root, nwjs_app_dst):
                         continue
                     total_files += len(files)
 
-                progress_dialog = QProgressDialog("Exporting standalone app...", "Cancel", 0, total_files, self)
+                progress_dialog = QProgressDialog(
+                    "Exporting standalone app...", "Cancel", 0, total_files, self
+                )
                 progress_dialog.setWindowModality(Qt.WindowModal)
                 progress_dialog.setMinimumDuration(0)
                 progress_dialog.show()
 
                 shutil.copytree(nwjs_app_src, nwjs_app_dst)
 
-                app_nw_dir = os.path.join(nwjs_app_dst, "Contents", "Resources", "app.nw")
+                app_nw_dir = os.path.join(
+                    nwjs_app_dst, "Contents", "Resources", "app.nw"
+                )
                 os.makedirs(app_nw_dir, exist_ok=True)
 
                 current_file_count = 0
-                for root, dirs, files in os.walk(self.last_selected_folder, topdown=True):
+                for root, dirs, files in os.walk(
+                    self.last_selected_folder, topdown=True
+                ):
                     # prune traversal into the destination app bundle (avoids infinite loop)
-                    dirs[:] = [d for d in dirs if not _is_within(os.path.join(root, d), nwjs_app_dst)]
+                    dirs[:] = [
+                        d
+                        for d in dirs
+                        if not _is_within(os.path.join(root, d), nwjs_app_dst)
+                    ]
                     if _is_within(root, nwjs_app_dst):
                         continue
 
@@ -1483,67 +2116,145 @@ class RPGMLauncher(QMainWindow):
                         if _is_within(s, nwjs_app_dst):
                             continue
 
-                        d = os.path.join(app_nw_dir, os.path.relpath(s, self.last_selected_folder))
+                        d = os.path.join(
+                            app_nw_dir, os.path.relpath(s, self.last_selected_folder)
+                        )
                         os.makedirs(os.path.dirname(d), exist_ok=True)
                         shutil.copy2(s, d)
 
                         current_file_count += 1
                         progress_dialog.setValue(current_file_count)
-                        progress_dialog.setLabelText(f"Copying over: {self.truncate_filename(file)}")
+                        progress_dialog.setLabelText(
+                            f"Copying over: {self.truncate_filename(file)}"
+                        )
                         QApplication.processEvents()
                         if progress_dialog.wasCanceled():
                             logging.info("Export canceled by user.")
-                            QMessageBox.information(self, "Export Canceled", "Export operation was canceled.")
+                            QMessageBox.information(
+                                self,
+                                "Export Canceled",
+                                "Export operation was canceled.",
+                            )
                             return
 
-                progress_dialog.close()
-                QMessageBox.information(self, "Export Complete", "Standalone app exported successfully.")
-                logging.info("Standalone app exported successfully to %s", destination_folder)
+                if translation_applicable:
+                    try:
+                        if translation_active:
+                            copy_layout = translation.detect_game_layout(app_nw_dir)
+                            if not copy_layout or not translation.get_status(
+                                copy_layout
+                            ).get("active"):
+                                raise RuntimeError(
+                                    "The exported app does not contain an active translation."
+                                )
+                            entry_present, entry_error = (
+                                translation.loader_entry_present(copy_layout)
+                            )
+                            if entry_error or not entry_present:
+                                raise RuntimeError(
+                                    "The exported app does not contain the translation loader entry."
+                                )
+                            metadata_result = translation.clean_export_metadata(
+                                app_nw_dir
+                            )
+                            if not metadata_result.ok:
+                                raise RuntimeError(metadata_result.message)
+                        else:
+                            clean_result = translation.clean_app_copy(app_nw_dir)
+                            if not clean_result.ok:
+                                raise RuntimeError(clean_result.message)
+                    except Exception as exc:
+                        logging.exception(
+                            "Failed to finalize translation in exported app"
+                        )
+                        progress_dialog.close()
+                        shutil.rmtree(nwjs_app_dst, ignore_errors=True)
+                        QMessageBox.critical(
+                            self,
+                            "Translation Export Error",
+                            f"The exported app was not created cleanly:\n{exc}",
+                        )
+                        return
 
-                QMessageBox.warning(self, "First Launch Warning", "Due to MacOS permissions, the first launch of the standalone app may stall or crash. To fix, simply force quit the app and reopen it.")
-                
+                progress_dialog.close()
+                QMessageBox.information(
+                    self, "Export Complete", "Standalone app exported successfully."
+                )
+                logging.info(
+                    "Standalone app exported successfully to %s", destination_folder
+                )
+
+                QMessageBox.warning(
+                    self,
+                    "First Launch Warning",
+                    "Due to MacOS permissions, the first launch of the standalone app may stall or crash. To fix, simply force quit the app and reopen it.",
+                )
+
             elif self.check_game_ini(folder_path):
-                if not self.check_mkxpz_installed() or not self.check_RTP_installed() or not self.check_soundfont_installed():
+                if (
+                    not self.check_mkxpz_installed()
+                    or not self.check_RTP_installed()
+                    or not self.check_soundfont_installed()
+                ):
                     return
 
-                enabled_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json")
-                advanced_settings_file = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json")
+                enabled_settings_file = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/enabled-mkxpz-settings.json"
+                )
+                advanced_settings_file = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/mkxpz-advanced.json"
+                )
 
                 if not os.path.exists(enabled_settings_file):
-                    with open(enabled_settings_file, 'w') as file:
+                    with open(enabled_settings_file, "w") as file:
                         json.dump(default_enabled_settings, file, indent=4)
-                    logging.info("Created enabled-mkxpz-settings.json with default values.")
+                    logging.info(
+                        "Created enabled-mkxpz-settings.json with default values."
+                    )
 
                 if not os.path.exists(advanced_settings_file):
-                    with open(advanced_settings_file, 'w') as file:
+                    with open(advanced_settings_file, "w") as file:
                         json.dump(default_advanced_settings, file, indent=4)
                     logging.info("Created mkxpz-advanced.json with default values.")
 
-                with open(enabled_settings_file, 'r') as file:
+                with open(enabled_settings_file, "r") as file:
                     enabled_settings = json.load(file)
 
-                with open(advanced_settings_file, 'r') as file:
+                with open(advanced_settings_file, "r") as file:
                     advanced_settings = json.load(file)
 
-                mkxpz_json_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/Game/mkxp.json")
-                soundfont_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/GMGSx.SF2")
+                mkxpz_json_path = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/Game/mkxp.json"
+                )
+                soundfont_path = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/GMGSx.SF2"
+                )
                 rtp_value, rgss_version = self.get_rtp_value(folder_path)
-                rtp_path = os.path.join(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/RTP"), rtp_value)
-                kawariki_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/kawariki")
+                rtp_path = os.path.join(
+                    os.path.expanduser(
+                        "~/Library/Application Support/RPGM-Launcher/RTP"
+                    ),
+                    rtp_value,
+                )
+                kawariki_path = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/kawariki"
+                )
 
                 if os.path.exists(mkxpz_json_path):
-                    with open(mkxpz_json_path, 'rb') as file:
+                    with open(mkxpz_json_path, "rb") as file:
                         raw_data = file.read()
                         result = chardet.detect(raw_data)
-                        encoding = result['encoding']
-                    with open(mkxpz_json_path, 'r', encoding=encoding) as file:
+                        encoding = result["encoding"]
+                    with open(mkxpz_json_path, "r", encoding=encoding) as file:
                         mkxp_config = json.load(file)
                 else:
                     mkxp_config = {}
 
                 for key, enabled in enabled_settings.items():
                     if enabled in ["True", "Force"]:
-                        mkxp_config[key] = advanced_settings.get(key, mkxp_config.get(key))
+                        mkxp_config[key] = advanced_settings.get(
+                            key, mkxp_config.get(key)
+                        )
                         if key == "gameFolder" and not advanced_settings[key]:
                             mkxp_config["gameFolder"] = folder_path
                         elif key == "RTP" and not advanced_settings[key]:
@@ -1558,21 +2269,32 @@ class RPGMLauncher(QMainWindow):
                         mkxp_config.pop(key, None)
 
                 try:
-                    with open(mkxpz_json_path, 'rb') as file:
+                    with open(mkxpz_json_path, "rb") as file:
                         raw_data = file.read()
                         result = chardet.detect(raw_data)
-                        encoding = result['encoding']
-                    with open(mkxpz_json_path, 'w', encoding=encoding) as file:
+                        encoding = result["encoding"]
+                    with open(mkxpz_json_path, "w", encoding=encoding) as file:
                         json.dump(mkxp_config, file, indent=4)
                     logging.info("Updated mkxp.json with enabled settings.")
-                    logging.info("Setting: %s, RTP: %s, midiSoundFont: %s, preloadScript: %s, rgssVersion: %s", mkxp_config.get("gameFolder"), mkxp_config.get("RTP"), mkxp_config.get("midiSoundFont"), mkxp_config.get("preloadScript"), mkxp_config.get("rgssVersion"))
+                    logging.info(
+                        "Setting: %s, RTP: %s, midiSoundFont: %s, preloadScript: %s, rgssVersion: %s",
+                        mkxp_config.get("gameFolder"),
+                        mkxp_config.get("RTP"),
+                        mkxp_config.get("midiSoundFont"),
+                        mkxp_config.get("preloadScript"),
+                        mkxp_config.get("rgssVersion"),
+                    )
                 except Exception as e:
                     logging.error("Failed to update mkxp.json: %s", str(e))
-                    QMessageBox.critical(self, "Error", f"Failed to update mkxp.json: {str(e)}")
+                    QMessageBox.critical(
+                        self, "Error", f"Failed to update mkxp.json: {str(e)}"
+                    )
                     return
 
                 # MKXPZ export process
-                mkxpz_app_src = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app")
+                mkxpz_app_src = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/Z-universal.app"
+                )
                 mkxpz_app_dst = os.path.join(destination_folder, app_name + ".app")
 
                 shutil.copytree(mkxpz_app_src, mkxpz_app_dst)
@@ -1582,13 +2304,23 @@ class RPGMLauncher(QMainWindow):
                 total_files = 0
                 for root, dirs, files in os.walk(folder_path, topdown=True):
                     # prune traversal into the destination app bundle
-                    dirs[:] = [d for d in dirs if not _is_within(os.path.join(root, d), mkxpz_app_dst)]
+                    dirs[:] = [
+                        d
+                        for d in dirs
+                        if not _is_within(os.path.join(root, d), mkxpz_app_dst)
+                    ]
                     if _is_within(root, mkxpz_app_dst):
                         continue
                     # also ensure we don't count files inside the destination .app
-                    total_files += sum(1 for f in files if not _is_within(os.path.join(root, f), mkxpz_app_dst))
+                    total_files += sum(
+                        1
+                        for f in files
+                        if not _is_within(os.path.join(root, f), mkxpz_app_dst)
+                    )
 
-                progress_dialog = QProgressDialog("Exporting standalone app...", "Cancel", 0, total_files, self)
+                progress_dialog = QProgressDialog(
+                    "Exporting standalone app...", "Cancel", 0, total_files, self
+                )
                 progress_dialog.setWindowModality(Qt.WindowModal)
                 progress_dialog.setMinimumDuration(0)
                 progress_dialog.show()
@@ -1596,7 +2328,11 @@ class RPGMLauncher(QMainWindow):
                 current_file_count = 0
                 for root, dirs, files in os.walk(folder_path, topdown=True):
                     # prune traversal into the destination app bundle
-                    dirs[:] = [d for d in dirs if not _is_within(os.path.join(root, d), mkxpz_app_dst)]
+                    dirs[:] = [
+                        d
+                        for d in dirs
+                        if not _is_within(os.path.join(root, d), mkxpz_app_dst)
+                    ]
                     if _is_within(root, mkxpz_app_dst):
                         continue
 
@@ -1610,15 +2346,26 @@ class RPGMLauncher(QMainWindow):
                         shutil.copy2(s, d)
                         current_file_count += 1
                         progress_dialog.setValue(current_file_count)
-                        progress_dialog.setLabelText(f"Copying over: {self.truncate_filename(file)}")
+                        progress_dialog.setLabelText(
+                            f"Copying over: {self.truncate_filename(file)}"
+                        )
                         QApplication.processEvents()
                         if progress_dialog.wasCanceled():
                             logging.info("Export canceled by user.")
-                            QMessageBox.information(self, "Export Canceled", "Export operation was canceled.")
+                            QMessageBox.information(
+                                self,
+                                "Export Canceled",
+                                "Export operation was canceled.",
+                            )
                             return
 
                 rtp_value, rgss_version = self.get_rtp_value(folder_path)
-                rtp_src = os.path.join(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/RTP"), rtp_value)
+                rtp_src = os.path.join(
+                    os.path.expanduser(
+                        "~/Library/Application Support/RPGM-Launcher/RTP"
+                    ),
+                    rtp_value,
+                )
                 rtp_dst = os.path.join(game_dir, rtp_value)
                 shutil.copytree(rtp_src, rtp_dst, dirs_exist_ok=True)
 
@@ -1629,41 +2376,58 @@ class RPGMLauncher(QMainWindow):
                 kawariki_src = os.path.expanduser(mkxp_config["preloadScript"][0])
                 kawariki_dst = os.path.join(game_dir, "kawariki")
                 shutil.copytree(kawariki_src, kawariki_dst, dirs_exist_ok=True)
-                
 
                 mkxp_json_path = os.path.join(game_dir, "mkxp.json")
                 if os.path.exists(mkxp_json_path):
                     try:
-                        with open(mkxp_json_path, 'rb') as file:
+                        with open(mkxp_json_path, "rb") as file:
                             raw_data = file.read()
                             result = chardet.detect(raw_data)
-                            encoding = result['encoding']
+                            encoding = result["encoding"]
 
-                        with open(mkxp_json_path, 'r', encoding=encoding) as file:
+                        with open(mkxp_json_path, "r", encoding=encoding) as file:
                             mkxp_config = json.load(file)
 
                         mkxp_config["gameFolder"] = "./"
                         mkxp_config["RTP"] = [f"./{rtp_value}"]
-                        mkxp_config["midiSoundFont"] = f"./{os.path.basename(soundfont_dst)}"
-                        mkxp_config["preloadScript"] = [f"./{os.path.join('kawariki', 'preload.rb')}"]
+                        mkxp_config["midiSoundFont"] = (
+                            f"./{os.path.basename(soundfont_dst)}"
+                        )
+                        mkxp_config["preloadScript"] = [
+                            f"./{os.path.join('kawariki', 'preload.rb')}"
+                        ]
 
-                        with open(mkxp_json_path, 'w', encoding=encoding) as file:
+                        with open(mkxp_json_path, "w", encoding=encoding) as file:
                             json.dump(mkxp_config, file, indent=4)
-                        
-                        logging.info("Updated mkxp.json with gameFolder: './' and RTP: './%s'", rtp_value)
+
+                        logging.info(
+                            "Updated mkxp.json with gameFolder: './' and RTP: './%s'",
+                            rtp_value,
+                        )
 
                     except Exception as e:
                         logging.error("Failed to update mkxp.json: %s", str(e))
-                        QMessageBox.critical(self, "Error", f"Failed to update mkxp.json: {str(e)}")
+                        QMessageBox.critical(
+                            self, "Error", f"Failed to update mkxp.json: {str(e)}"
+                        )
                         return
 
                 progress_dialog.close()
-                QMessageBox.information(self, "Export Complete", "MKXPZ standalone app exported successfully.")
-                logging.info("MKXPZ standalone app exported successfully to %s", destination_folder)
-            
+                QMessageBox.information(
+                    self,
+                    "Export Complete",
+                    "MKXPZ standalone app exported successfully.",
+                )
+                logging.info(
+                    "MKXPZ standalone app exported successfully to %s",
+                    destination_folder,
+                )
+
             elif self.check_RTP_RT(folder_path):
                 # EasyRPG export process
-                easyrpg_app_src = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app")
+                easyrpg_app_src = os.path.expanduser(
+                    "~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app"
+                )
                 easyrpg_app_dst = os.path.join(destination_folder, app_name + ".app")
 
                 os.mkdir(easyrpg_app_dst)
@@ -1673,13 +2437,23 @@ class RPGMLauncher(QMainWindow):
                 total_files = 0
                 for root, dirs, files in os.walk(folder_path, topdown=True):
                     # prune traversal into the destination app bundle
-                    dirs[:] = [d for d in dirs if not _is_within(os.path.join(root, d), easyrpg_app_dst)]
+                    dirs[:] = [
+                        d
+                        for d in dirs
+                        if not _is_within(os.path.join(root, d), easyrpg_app_dst)
+                    ]
                     if _is_within(root, easyrpg_app_dst):
                         continue
                     # don't count files inside the destination .app
-                    total_files += sum(1 for f in files if not _is_within(os.path.join(root, f), easyrpg_app_dst))
+                    total_files += sum(
+                        1
+                        for f in files
+                        if not _is_within(os.path.join(root, f), easyrpg_app_dst)
+                    )
 
-                progress_dialog = QProgressDialog("Exporting standalone app...", "Cancel", 0, total_files, self)
+                progress_dialog = QProgressDialog(
+                    "Exporting standalone app...", "Cancel", 0, total_files, self
+                )
                 progress_dialog.setWindowModality(Qt.WindowModal)
                 progress_dialog.setMinimumDuration(0)
                 progress_dialog.show()
@@ -1687,7 +2461,11 @@ class RPGMLauncher(QMainWindow):
                 current_file_count = 0
                 for root, dirs, files in os.walk(folder_path, topdown=True):
                     # prune traversal into the destination app bundle
-                    dirs[:] = [d for d in dirs if not _is_within(os.path.join(root, d), easyrpg_app_dst)]
+                    dirs[:] = [
+                        d
+                        for d in dirs
+                        if not _is_within(os.path.join(root, d), easyrpg_app_dst)
+                    ]
                     if _is_within(root, easyrpg_app_dst):
                         continue
 
@@ -1701,34 +2479,83 @@ class RPGMLauncher(QMainWindow):
                         shutil.copy2(s, d)
                         current_file_count += 1
                         progress_dialog.setValue(current_file_count)
-                        progress_dialog.setLabelText(f"Copying over: {self.truncate_filename(file)}")
+                        progress_dialog.setLabelText(
+                            f"Copying over: {self.truncate_filename(file)}"
+                        )
                         QApplication.processEvents()
                         if progress_dialog.wasCanceled():
                             logging.info("Export canceled by user.")
-                            QMessageBox.information(self, "Export Canceled", "Export operation was canceled.")
+                            QMessageBox.information(
+                                self,
+                                "Export Canceled",
+                                "Export operation was canceled.",
+                            )
                             return
 
                 # Script required for standlone app operation
                 # Also apple why did you have to make this so awful. Why do I need to copy the entire app just to keep it executable?
                 progress_dialog.setLabelText("Copying support files...")
                 logging.info("Copying support files for EasyRPG standalone app...")
-                shutil.copy(os.path.join(os.path.dirname(__file__), 'EasyRPG-Standalone'), os.path.join(easyrpg_app_dst))
-                shutil.copytree(easyrpg_app_src, os.path.join(easyrpg_app_dst, "EasyRPG Player.app"), dirs_exist_ok=True)
+                shutil.copy(
+                    os.path.join(os.path.dirname(__file__), "EasyRPG-Standalone"),
+                    os.path.join(easyrpg_app_dst),
+                )
+                shutil.copytree(
+                    easyrpg_app_src,
+                    os.path.join(easyrpg_app_dst, "EasyRPG Player.app"),
+                    dirs_exist_ok=True,
+                )
                 logging.info("Support files copied successfully. Moving executables...")
-                shutil.move(os.path.join(easyrpg_app_dst, "EasyRPG-Standalone"), os.path.join(easyrpg_app_dst, app_name))
+                shutil.move(
+                    os.path.join(easyrpg_app_dst, "EasyRPG-Standalone"),
+                    os.path.join(easyrpg_app_dst, app_name),
+                )
                 logging.info("Executables moved successfully. Setting permissions...")
-                subprocess.run(["chmod", "+x", os.path.join(easyrpg_app_dst, app_name)], check=True)
-                subprocess.run(["chmod", "+x", os.path.join(easyrpg_app_dst, "EasyRPG Player.app", "Contents", "MacOS", "EasyRPG Player")], check=True)
+                subprocess.run(
+                    ["chmod", "+x", os.path.join(easyrpg_app_dst, app_name)], check=True
+                )
+                subprocess.run(
+                    [
+                        "chmod",
+                        "+x",
+                        os.path.join(
+                            easyrpg_app_dst,
+                            "EasyRPG Player.app",
+                            "Contents",
+                            "MacOS",
+                            "EasyRPG Player",
+                        ),
+                    ],
+                    check=True,
+                )
 
                 logging.info("Applying advanced settings...")
 
                 extra_options = ""
 
-                if os.path.isfile(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json")) and os.path.isfile(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json")):
-                    with open(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"), 'r') as file:
+                if os.path.isfile(
+                    os.path.expanduser(
+                        "~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"
+                    )
+                ) and os.path.isfile(
+                    os.path.expanduser(
+                        "~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"
+                    )
+                ):
+                    with open(
+                        os.path.expanduser(
+                            "~/Library/Application Support/RPGM-Launcher/enabled-easyrpg-settings.json"
+                        ),
+                        "r",
+                    ) as file:
                         enabled_settings = json.load(file)
 
-                    with open(os.path.expanduser("~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"), 'r') as file:
+                    with open(
+                        os.path.expanduser(
+                            "~/Library/Application Support/RPGM-Launcher/easyrpg-advanced.json"
+                        ),
+                        "r",
+                    ) as file:
                         advanced_settings = json.load(file)
 
                     for key, enabled in enabled_settings.items():
@@ -1736,22 +2563,37 @@ class RPGMLauncher(QMainWindow):
                             if advanced_settings[key] == True:
                                 extra_options += f" {key}"
                             elif advanced_settings[key]:
-                                extra_options += f" {key} \"{advanced_settings[key]}\""
-                
-                with open(os.path.join(easyrpg_app_dst, app_name),'a') as f:
+                                extra_options += f' {key} "{advanced_settings[key]}"'
+
+                with open(os.path.join(easyrpg_app_dst, app_name), "a") as f:
                     f.write(extra_options)
 
                 progress_dialog.close()
-                QMessageBox.information(self, "Export Complete", "EasyRPG standalone app exported successfully.")
-                logging.info("EasyRPG standalone app exported successfully to %s", destination_folder)
+                QMessageBox.information(
+                    self,
+                    "Export Complete",
+                    "EasyRPG standalone app exported successfully.",
+                )
+                logging.info(
+                    "EasyRPG standalone app exported successfully to %s",
+                    destination_folder,
+                )
 
             else:
-                logging.error("No valid game file (package.json, Game.ini, or RTP_RT) found in the selected folder.")
-                QMessageBox.critical(self, "Error", "No valid game file (package.json, Game.ini, or RTP_RT) found in the selected folder.")
+                logging.error(
+                    "No valid game file (package.json, Game.ini, or RTP_RT) found in the selected folder."
+                )
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "No valid game file (package.json, Game.ini, or RTP_RT) found in the selected folder.",
+                )
 
         except Exception as e:
             logging.error("Error exporting standalone app: %s", str(e))
-            QMessageBox.critical(self, "Error", f"Failed to export standalone app: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to export standalone app: {str(e)}"
+            )
 
     def get_app_name(self):
         dialog = QDialog(self)
@@ -1765,7 +2607,9 @@ class RPGMLauncher(QMainWindow):
         line_edit.setPlaceholderText("Game Name")
         layout.addWidget(line_edit)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog
+        )
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
@@ -1783,17 +2627,23 @@ class RPGMLauncher(QMainWindow):
             url = f"https://dl.nwjs.io/{version}/nwjs-sdk-{version}-osx-{arch}.zip"
             tmp_file = "/tmp/nwjs.zip"
 
-            logging.info("Downloading and installing version %s for %s architecture...", version, arch)
+            logging.info(
+                "Downloading and installing version %s for %s architecture...",
+                version,
+                arch,
+            )
             response = requests.get(url, stream=True)
             if response.status_code != 200:
                 logging.error("Failed to download version %s for %s.", version, arch)
                 return
 
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
             downloaded_size = 0
             chunk_size = 1024  # 1KB
 
-            progress_dialog = QProgressDialog("Downloading NWJS...", "Cancel", 0, total_size, self)
+            progress_dialog = QProgressDialog(
+                "Downloading NWJS...", "Cancel", 0, total_size, self
+            )
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setMinimumDuration(0)
             progress_dialog.show()
@@ -1808,15 +2658,21 @@ class RPGMLauncher(QMainWindow):
                         downloaded_size += len(chunk)
                         progress_dialog.setValue(downloaded_size)
 
-                        elapsed_time = start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        elapsed_time = (
+                            start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        )
 
                         if elapsed_time > 0:
-                            download_speed = downloaded_size / (1024 * 1024) / elapsed_time
+                            download_speed = (
+                                downloaded_size / (1024 * 1024) / elapsed_time
+                            )
                         else:
                             download_speed = 0
 
-                        progress_dialog.setLabelText(f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
-                                                     f"Speed: {download_speed:.2f} MB/s")
+                        progress_dialog.setLabelText(
+                            f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
+                            f"Speed: {download_speed:.2f} MB/s"
+                        )
 
                         if progress_dialog.wasCanceled():
                             canceled = True
@@ -1825,7 +2681,9 @@ class RPGMLauncher(QMainWindow):
 
             if canceled:
                 os.remove(tmp_file)
-                QMessageBox.information(self, "NWJS Installation", "NWJS Installation Canceled.")
+                QMessageBox.information(
+                    self, "NWJS Installation", "NWJS Installation Canceled."
+                )
                 return
 
             subprocess.run(["unzip", "-q", tmp_file, "-d", "/tmp"])
@@ -1833,7 +2691,7 @@ class RPGMLauncher(QMainWindow):
             target_dir = os.path.join(BASE_DIR, version)
             if os.path.exists(target_dir):
                 shutil.rmtree(target_dir)
-            
+
             os.makedirs(target_dir, exist_ok=True)
             shutil.move(f"/tmp/nwjs-sdk-{version}-osx-{arch}/nwjs.app", target_dir)
             logging.info("Version %s installed successfully at %s", version, target_dir)
@@ -1846,7 +2704,11 @@ class RPGMLauncher(QMainWindow):
             shutil.rmtree(f"/tmp/nwjs-sdk-{version}-osx-{arch}")
 
             progress_dialog.close()
-            QMessageBox.information(self, "Install NWJS Version", "NWJS installation completed successfully.")
+            QMessageBox.information(
+                self,
+                "Install NWJS Version",
+                "NWJS installation completed successfully.",
+            )
 
         arch = "arm64" if platform.machine() == "arm64" else "x64"
         logging.info("Querying available versions...")
@@ -1857,7 +2719,7 @@ class RPGMLauncher(QMainWindow):
 
         data = response.json()
         versions = {v["version"]: v for v in data["versions"]}
-        
+
         version, ok = self.show_version_selection_dialog(versions.keys())
         if ok and version:
             version_info = versions[version]
@@ -1876,7 +2738,9 @@ class RPGMLauncher(QMainWindow):
     # Install MKXP-Z, updates will be checked automatically
     def install_mkxpz(self):
         # The URL for the MKXP-Z universal build is under my fork because it needs to be built manually
-        URL = "https://github.com/m5kro/mkxp-z/releases/download/launcher/Z-universal.zip"
+        URL = (
+            "https://github.com/m5kro/mkxp-z/releases/download/launcher/Z-universal.zip"
+        )
         zip_file_path = "/tmp/Z-universal.zip"
         target_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/")
 
@@ -1887,11 +2751,13 @@ class RPGMLauncher(QMainWindow):
                 QMessageBox.critical(self, "Error", "Failed to download MKXPZ.")
                 return
 
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
             downloaded_size = 0
             chunk_size = 1024  # 1KB
 
-            progress_dialog = QProgressDialog("Downloading MKXPZ...", "Cancel", 0, total_size, self)
+            progress_dialog = QProgressDialog(
+                "Downloading MKXPZ...", "Cancel", 0, total_size, self
+            )
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setMinimumDuration(0)
             progress_dialog.show()
@@ -1906,15 +2772,21 @@ class RPGMLauncher(QMainWindow):
                         downloaded_size += len(chunk)
                         progress_dialog.setValue(downloaded_size)
 
-                        elapsed_time = start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        elapsed_time = (
+                            start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        )
 
                         if elapsed_time > 0:
-                            download_speed = downloaded_size / (1024 * 1024) / elapsed_time
+                            download_speed = (
+                                downloaded_size / (1024 * 1024) / elapsed_time
+                            )
                         else:
                             download_speed = 0
 
-                        progress_dialog.setLabelText(f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
-                                                    f"Speed: {download_speed:.2f} MB/s")
+                        progress_dialog.setLabelText(
+                            f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
+                            f"Speed: {download_speed:.2f} MB/s"
+                        )
 
                         if progress_dialog.wasCanceled():
                             canceled = True
@@ -1923,35 +2795,42 @@ class RPGMLauncher(QMainWindow):
 
             if canceled:
                 os.remove(zip_file_path)
-                QMessageBox.information(self, "MKXPZ Installation", "MKXPZ installation canceled.")
+                QMessageBox.information(
+                    self, "MKXPZ Installation", "MKXPZ installation canceled."
+                )
                 return
 
-            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
                 zip_ref.extractall(target_dir)
             logging.info("MKXPZ extracted successfully to %s", target_dir)
 
             os.remove(zip_file_path)
 
-            mkxpz_executable_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/MacOS/Z-universal")
+            mkxpz_executable_path = os.path.expanduser(
+                "~/Library/Application Support/RPGM-Launcher/Z-universal.app/Contents/MacOS/Z-universal"
+            )
             try:
                 subprocess.run(["chmod", "+x", mkxpz_executable_path], check=True)
                 logging.info("Set executable permissions for %s", mkxpz_executable_path)
             except subprocess.CalledProcessError as e:
                 logging.error("Failed to set executable permissions: %s", str(e))
-                QMessageBox.critical(self, "Error", f"Failed to set executable permissions: {str(e)}")
+                QMessageBox.critical(
+                    self, "Error", f"Failed to set executable permissions: {str(e)}"
+                )
                 return
 
             progress_dialog.close()
             global last_commit_sha
             global latest_commit_sha
             last_commit_sha = latest_commit_sha
-            QMessageBox.information(self, "MKXPZ Installation", "MKXPZ installed successfully.")
-            
+            QMessageBox.information(
+                self, "MKXPZ Installation", "MKXPZ installed successfully."
+            )
 
         except Exception as e:
             logging.error("Error installing MKXPZ: %s", str(e))
             QMessageBox.critical(self, "Error", f"Failed to install MKXPZ: {str(e)}")
-    
+
     # Install RTP (Run Time Package) for RPG Maker games
     def install_RTP(self):
         URL = "https://github.com/m5kro/mkxp-z/releases/download/launcher/RTP.zip"
@@ -1965,11 +2844,13 @@ class RPGMLauncher(QMainWindow):
                 QMessageBox.critical(self, "Error", "Failed to download RTP.")
                 return
 
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
             downloaded_size = 0
             chunk_size = 1024  # 1KB
 
-            progress_dialog = QProgressDialog("Downloading RTP...", "Cancel", 0, total_size, self)
+            progress_dialog = QProgressDialog(
+                "Downloading RTP...", "Cancel", 0, total_size, self
+            )
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setMinimumDuration(0)
             progress_dialog.show()
@@ -1984,15 +2865,21 @@ class RPGMLauncher(QMainWindow):
                         downloaded_size += len(chunk)
                         progress_dialog.setValue(downloaded_size)
 
-                        elapsed_time = start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        elapsed_time = (
+                            start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        )
 
                         if elapsed_time > 0:
-                            download_speed = downloaded_size / (1024 * 1024) / elapsed_time
+                            download_speed = (
+                                downloaded_size / (1024 * 1024) / elapsed_time
+                            )
                         else:
                             download_speed = 0
 
-                        progress_dialog.setLabelText(f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
-                                                    f"Speed: {download_speed:.2f} MB/s")
+                        progress_dialog.setLabelText(
+                            f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
+                            f"Speed: {download_speed:.2f} MB/s"
+                        )
 
                         if progress_dialog.wasCanceled():
                             canceled = True
@@ -2001,17 +2888,20 @@ class RPGMLauncher(QMainWindow):
 
             if canceled:
                 os.remove(zip_file_path)
-                QMessageBox.information(self, "RTP Installation", "RTP installation canceled.")
+                QMessageBox.information(
+                    self, "RTP Installation", "RTP installation canceled."
+                )
                 return
 
-            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
                 zip_ref.extractall(target_dir)
             logging.info("RTP extracted successfully to %s", target_dir)
 
             os.remove(zip_file_path)
             progress_dialog.close()
-            QMessageBox.information(self, "RTP Installation", "RTP installed successfully.")
-            
+            QMessageBox.information(
+                self, "RTP Installation", "RTP installed successfully."
+            )
 
         except Exception as e:
             logging.error("Error installing RTP: %s", str(e))
@@ -2020,17 +2910,21 @@ class RPGMLauncher(QMainWindow):
     # Install soundfont for RPG Maker games
     def download_soundfont(self):
         URL = "https://musical-artifacts.com/artifacts/841/GMGSx.SF2"
-        soundfont_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/GMGSx.SF2")
+        soundfont_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/GMGSx.SF2"
+        )
 
         if not os.path.exists(soundfont_path):
             try:
                 response = requests.get(URL, stream=True)
-                total_size = int(response.headers.get('content-length', 0))
+                total_size = int(response.headers.get("content-length", 0))
                 downloaded_size = 0
                 chunk_size = 1024  # 1KB
 
                 # Setup a progress dialog
-                progress_dialog = QProgressDialog("Downloading GMGSx.SF2 Soundfont...", "Cancel", 0, total_size, self)
+                progress_dialog = QProgressDialog(
+                    "Downloading GMGSx.SF2 Soundfont...", "Cancel", 0, total_size, self
+                )
                 progress_dialog.setWindowModality(Qt.WindowModal)
                 progress_dialog.setMinimumDuration(0)
                 progress_dialog.show()
@@ -2046,10 +2940,16 @@ class RPGMLauncher(QMainWindow):
 
                             # Update progress dialog
                             progress_dialog.setValue(downloaded_size)
-                            elapsed_time = start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                            elapsed_time = (
+                                start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                            )
 
                             # Display download speed and progress
-                            download_speed = downloaded_size / (1024 * 1024) / elapsed_time if elapsed_time > 0 else 0
+                            download_speed = (
+                                downloaded_size / (1024 * 1024) / elapsed_time
+                                if elapsed_time > 0
+                                else 0
+                            )
                             progress_dialog.setLabelText(
                                 f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
                                 f"Speed: {download_speed:.2f} MB/s"
@@ -2065,18 +2965,28 @@ class RPGMLauncher(QMainWindow):
 
                 if canceled:
                     os.remove(soundfont_path)
-                    QMessageBox.information(self, "Soundfont Installation", "Soundfont download canceled.")
+                    QMessageBox.information(
+                        self, "Soundfont Installation", "Soundfont download canceled."
+                    )
                     return
                 else:
-                    logging.info("Soundfont downloaded successfully to %s", soundfont_path)
-                    QMessageBox.information(self, "Soundfont Installation", "Soundfont GMGSx.SF2 downloaded successfully.")
+                    logging.info(
+                        "Soundfont downloaded successfully to %s", soundfont_path
+                    )
+                    QMessageBox.information(
+                        self,
+                        "Soundfont Installation",
+                        "Soundfont GMGSx.SF2 downloaded successfully.",
+                    )
 
             except Exception as e:
                 logging.error("Error downloading GMGSx.SF2: %s", str(e))
-                QMessageBox.critical(self, "Error", f"Failed to download GMGSx.SF2: {str(e)}")
+                QMessageBox.critical(
+                    self, "Error", f"Failed to download GMGSx.SF2: {str(e)}"
+                )
         else:
             logging.info("Soundfont GMGSx.SF2 already exists at %s", soundfont_path)
-    
+
     # Install Kawariki patches for RPG Maker games
     def download_kawariki_patches(self):
         URL = "https://github.com/m5kro/mkxp-z/releases/download/launcher/kawariki.zip"
@@ -2087,14 +2997,18 @@ class RPGMLauncher(QMainWindow):
             response = requests.get(URL, stream=True)
             if response.status_code != 200:
                 logging.error("Failed to download Kawariki patches.")
-                QMessageBox.critical(self, "Error", "Failed to download Kawariki patches.")
+                QMessageBox.critical(
+                    self, "Error", "Failed to download Kawariki patches."
+                )
                 return
 
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
             downloaded_size = 0
             chunk_size = 1024  # 1KB
 
-            progress_dialog = QProgressDialog("Downloading Kawariki patches...", "Cancel", 0, total_size, self)
+            progress_dialog = QProgressDialog(
+                "Downloading Kawariki patches...", "Cancel", 0, total_size, self
+            )
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setMinimumDuration(0)
             progress_dialog.show()
@@ -2109,15 +3023,21 @@ class RPGMLauncher(QMainWindow):
                         downloaded_size += len(chunk)
                         progress_dialog.setValue(downloaded_size)
 
-                        elapsed_time = start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        elapsed_time = (
+                            start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        )
 
                         if elapsed_time > 0:
-                            download_speed = downloaded_size / (1024 * 1024) / elapsed_time
+                            download_speed = (
+                                downloaded_size / (1024 * 1024) / elapsed_time
+                            )
                         else:
                             download_speed = 0
 
-                        progress_dialog.setLabelText(f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
-                                                        f"Speed: {download_speed:.2f} MB/s")
+                        progress_dialog.setLabelText(
+                            f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
+                            f"Speed: {download_speed:.2f} MB/s"
+                        )
 
                         if progress_dialog.wasCanceled():
                             canceled = True
@@ -2126,38 +3046,52 @@ class RPGMLauncher(QMainWindow):
 
             if canceled:
                 os.remove(zip_file_path)
-                QMessageBox.information(self, "Kawariki Patches Installation", "Kawariki patches installation canceled.")
+                QMessageBox.information(
+                    self,
+                    "Kawariki Patches Installation",
+                    "Kawariki patches installation canceled.",
+                )
                 return
 
-            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
                 zip_ref.extractall(target_dir)
             logging.info("Kawariki patches extracted successfully to %s", target_dir)
 
             os.remove(zip_file_path)
             progress_dialog.close()
-            QMessageBox.information(self, "Kawariki Patches Installation", "Kawariki patches installed successfully.")
+            QMessageBox.information(
+                self,
+                "Kawariki Patches Installation",
+                "Kawariki patches installed successfully.",
+            )
 
         except Exception as e:
             logging.error("Error installing Kawariki patches: %s", str(e))
-            QMessageBox.critical(self, "Error", f"Failed to install Kawariki patches: {str(e)}")
-    
+            QMessageBox.critical(
+                self, "Error", f"Failed to install Kawariki patches: {str(e)}"
+            )
+
     # Install EasyRPG Player for RPG Maker 2000/2003 games
     def install_easyrpg(self):
-        URL="https://ci.easyrpg.org/downloads/macos/EasyRPG-Player-macos.app.zip"
+        URL = "https://ci.easyrpg.org/downloads/macos/EasyRPG-Player-macos.app.zip"
         zip_file_path = "/tmp/EasyRPG-Player-macos.app.zip"
         target_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/")
         try:
             response = requests.get(URL, stream=True)
             if response.status_code != 200:
                 logging.error("Failed to download EasyRPG Player.")
-                QMessageBox.critical(self, "Error", "Failed to download EasyRPG Player.")
+                QMessageBox.critical(
+                    self, "Error", "Failed to download EasyRPG Player."
+                )
                 return
 
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
             downloaded_size = 0
             chunk_size = 1024  # 1KB
 
-            progress_dialog = QProgressDialog("Downloading EasyRPG Player...", "Cancel", 0, total_size, self)
+            progress_dialog = QProgressDialog(
+                "Downloading EasyRPG Player...", "Cancel", 0, total_size, self
+            )
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setMinimumDuration(0)
             progress_dialog.show()
@@ -2172,15 +3106,21 @@ class RPGMLauncher(QMainWindow):
                         downloaded_size += len(chunk)
                         progress_dialog.setValue(downloaded_size)
 
-                        elapsed_time = start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        elapsed_time = (
+                            start_time.msecsTo(QDateTime.currentDateTime()) / 1000
+                        )
 
                         if elapsed_time > 0:
-                            download_speed = downloaded_size / (1024 * 1024) / elapsed_time
+                            download_speed = (
+                                downloaded_size / (1024 * 1024) / elapsed_time
+                            )
                         else:
                             download_speed = 0
 
-                        progress_dialog.setLabelText(f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
-                                                     f"Speed: {download_speed:.2f} MB/s")
+                        progress_dialog.setLabelText(
+                            f"Downloaded: {downloaded_size / (1024 * 1024):.2f} MB of {total_size / (1024 * 1024):.2f} MB\n"
+                            f"Speed: {download_speed:.2f} MB/s"
+                        )
 
                         if progress_dialog.wasCanceled():
                             canceled = True
@@ -2189,43 +3129,61 @@ class RPGMLauncher(QMainWindow):
 
             if canceled:
                 os.remove(zip_file_path)
-                QMessageBox.information(self, "EasyRPG Player Installation", "EasyRPG Player installation canceled.")
+                QMessageBox.information(
+                    self,
+                    "EasyRPG Player Installation",
+                    "EasyRPG Player installation canceled.",
+                )
                 return
 
-            with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
                 zip_ref.extractall(os.path.dirname(target_dir))
             logging.info("EasyRPG Player extracted successfully to %s", target_dir)
 
             os.remove(zip_file_path)
-            easyrpg_executable_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app/Contents/MacOS/EasyRPG Player")
+            easyrpg_executable_path = os.path.expanduser(
+                "~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app/Contents/MacOS/EasyRPG Player"
+            )
             try:
                 subprocess.run(["chmod", "+x", easyrpg_executable_path], check=True)
-                logging.info("Set executable permissions for %s", easyrpg_executable_path)
+                logging.info(
+                    "Set executable permissions for %s", easyrpg_executable_path
+                )
             except subprocess.CalledProcessError as e:
                 logging.error("Failed to set executable permissions: %s", str(e))
-                QMessageBox.critical(self, "Error", f"Failed to set executable permissions: {str(e)}")
+                QMessageBox.critical(
+                    self, "Error", f"Failed to set executable permissions: {str(e)}"
+                )
                 return
 
             progress_dialog.close()
             global last_build_number
             global latest_build_number
             last_build_number = latest_build_number
-            QMessageBox.information(self, "EasyRPG Player Installation", "EasyRPG Player installed successfully.")
-            
+            QMessageBox.information(
+                self,
+                "EasyRPG Player Installation",
+                "EasyRPG Player installed successfully.",
+            )
+
         except Exception as e:
             logging.error("Error installing EasyRPG Player: %s", str(e))
-            QMessageBox.critical(self, "Error", f"Failed to install EasyRPG Player: {str(e)}")
+            QMessageBox.critical(
+                self, "Error", f"Failed to install EasyRPG Player: {str(e)}"
+            )
 
     def show_version_selection_dialog(self, versions):
         dialog = QDialog(self)
         dialog.setWindowTitle("Select NWJS Version")
         layout = QFormLayout(dialog)
-        
+
         combo_box = QComboBox(dialog)
         combo_box.addItems(versions)
         layout.addRow("Version:", combo_box)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog
+        )
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addRow(buttons)
@@ -2238,7 +3196,10 @@ class RPGMLauncher(QMainWindow):
         dialog.setWindowTitle("Rosetta Warning")
         layout = QVBoxLayout(dialog)
 
-        label = QLabel("An Apple Silicon / ARM64 build of this version of NWJS is unavailable. Would you like to use the Intel / x64 version with Rosetta?", dialog)
+        label = QLabel(
+            "An Apple Silicon / ARM64 build of this version of NWJS is unavailable. Would you like to use the Intel / x64 version with Rosetta?",
+            dialog,
+        )
         layout.addWidget(label)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Yes | QDialogButtonBox.No, dialog)
@@ -2248,7 +3209,7 @@ class RPGMLauncher(QMainWindow):
 
         result = dialog.exec()
         return result == QDialog.Accepted
-    
+
     def uninstall_menu(self):
         logging.info("Uninstall menu opened.")
         dialog = QDialog(self)
@@ -2259,7 +3220,9 @@ class RPGMLauncher(QMainWindow):
         combo_box = QComboBox(dialog)
         combo_box.addItems(["NWJS", "MKXP-Z", "EasyRPG Player", "ALL"])
         layout.addWidget(combo_box)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog
+        )
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
@@ -2276,10 +3239,16 @@ class RPGMLauncher(QMainWindow):
                 self.uninstall_all()
 
     def uninstall_nwjs(self):
-        applications_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher")
+        applications_dir = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher"
+        )
         # Only keep the directories that are actually versions (starting with "v")
 
-        versions = [v for v in os.listdir(applications_dir) if os.path.isdir(os.path.join(applications_dir, v)) and v.startswith("v")]
+        versions = [
+            v
+            for v in os.listdir(applications_dir)
+            if os.path.isdir(os.path.join(applications_dir, v)) and v.startswith("v")
+        ]
 
         version, ok = self.show_version_selection_dialog(versions)
         logging.info("Uninstalling NWJS version: %s", version)
@@ -2293,17 +3262,29 @@ class RPGMLauncher(QMainWindow):
                 self.update_select_button_state()
                 self.check_start_game_button()
                 logging.info("NWJS version %s uninstalled successfully.", version)
-                QMessageBox.information(self, "Uninstall NWJS Version", f"NWJS version {version} uninstalled successfully.")
+                QMessageBox.information(
+                    self,
+                    "Uninstall NWJS Version",
+                    f"NWJS version {version} uninstalled successfully.",
+                )
             else:
                 logging.error("NWJS version %s not found.", version)
-                QMessageBox.critical(self, "Error", f"NWJS version {version} not found.")
-    
+                QMessageBox.critical(
+                    self, "Error", f"NWJS version {version} not found."
+                )
+
     def uninstall_mkxpz(self):
         logging.info("Uninstalling MKXP-Z and associated files...")
-        mkxpz_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/Z-universal.app")
+        mkxpz_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/Z-universal.app"
+        )
         RTP_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/RTP")
-        soundfont_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/GMGSx.SF2")
-        kawariki_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/kawariki")
+        soundfont_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/GMGSx.SF2"
+        )
+        kawariki_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/kawariki"
+        )
 
         if os.path.exists(mkxpz_path):
             shutil.rmtree(mkxpz_path)
@@ -2311,54 +3292,226 @@ class RPGMLauncher(QMainWindow):
         else:
             logging.error("MKXP-Z not found.")
             QMessageBox.critical(self, "Error", "MKXP-Z not found.")
-        
+
         if os.path.exists(RTP_path):
             shutil.rmtree(RTP_path)
             logging.info("RTP uninstalled successfully.")
         else:
             logging.error("RTP not found.")
             QMessageBox.critical(self, "Error", "RTP not found.")
-        
+
         if os.path.exists(soundfont_path):
             os.remove(soundfont_path)
             logging.info("Soundfont GMGSx.SF2 uninstalled successfully.")
         else:
             logging.error("Soundfont GMGSx.SF2 not found.")
             QMessageBox.critical(self, "Error", "Soundfont GMGSx.SF2 not found.")
-        
+
         if os.path.exists(kawariki_path):
             shutil.rmtree(kawariki_path)
             logging.info("Kawariki patches uninstalled successfully.")
         else:
             logging.error("Kawariki patches not found.")
             QMessageBox.critical(self, "Error", "Kawariki patches not found.")
-        
-        QMessageBox.information(self, "Uninstall MKXP-Z", "MKXP-Z and associated files uninstalled successfully.")
-    
+
+        QMessageBox.information(
+            self,
+            "Uninstall MKXP-Z",
+            "MKXP-Z and associated files uninstalled successfully.",
+        )
+
     def uninstall_easyrpg(self, popup=True):
         logging.info("Uninstalling EasyRPG Player...")
-        easyrpg_path = os.path.expanduser("~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app")
+        easyrpg_path = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher/EasyRPG Player.app"
+        )
 
         if os.path.exists(easyrpg_path):
             shutil.rmtree(easyrpg_path)
             logging.info("EasyRPG Player uninstalled successfully.")
             if popup:
-                QMessageBox.information(self, "Uninstall EasyRPG Player", "EasyRPG Player uninstalled successfully.")
+                QMessageBox.information(
+                    self,
+                    "Uninstall EasyRPG Player",
+                    "EasyRPG Player uninstalled successfully.",
+                )
         else:
             logging.error("EasyRPG Player not found.")
             QMessageBox.critical(self, "Error", "EasyRPG Player not found.")
-    
+
+    def repair_translation_cleanup(self):
+        """Best-effort cleanup of translations when the path index is missing."""
+        cleaned = 0
+        failures = []
+        cancelled = False
+        start_folder = self.last_selected_folder or os.path.expanduser("~")
+        while True:
+            folder = QFileDialog.getExistingDirectory(
+                self,
+                "Select a game folder to clean translation",
+                start_folder,
+            )
+            if not folder:
+                cancelled = True
+                break
+            start_folder = folder
+            try:
+                layout = translation.detect_game_layout(folder)
+                if layout is None:
+                    failures.append(f"{folder}: no standard MV/MZ game found")
+                    QMessageBox.warning(
+                        self,
+                        "Translation Cleanup",
+                        "No standard MV/MZ game was found in that folder.",
+                    )
+                    continue
+                result = translation.remove_translation(layout)
+            except Exception as exc:
+                logging.exception("Failed to clean translation")
+                failures.append(f"{folder}: {exc}")
+                QMessageBox.critical(self, "Translation Cleanup", str(exc))
+                continue
+            if result.ok:
+                cleaned += 1
+                QMessageBox.information(
+                    self,
+                    "Translation Cleanup",
+                    "Translation artifacts were cleaned from that game folder.",
+                )
+            else:
+                failures.append(f"{folder}: {result.message}")
+                QMessageBox.critical(
+                    self,
+                    "Translation Cleanup",
+                    result.message,
+                )
+        if cleaned:
+            logging.info("Cleaned translations from %d game folder(s).", cleaned)
+        return {"cleaned": cleaned, "failures": failures, "cancelled": cancelled}
+
+    def handle_translation_index_problem(self, cleanup):
+        """Offer cleanup or a safe continue when the index is missing/corrupt."""
+        issue = getattr(cleanup, "index_error", "") or (
+            "The translation cleanup index is missing."
+        )
+        response = QMessageBox.warning(
+            self,
+            "Translation Cleanup",
+            f"{issue}\n\nPer-game translation files cannot be discovered "
+            "automatically.\n\n"
+            "Yes: select game folders to clean now.\n"
+            "No: continue uninstalling without cleaning them.\n"
+            "Cancel: stop the uninstall.",
+            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+            QMessageBox.Cancel,
+        )
+        if response == QMessageBox.Cancel:
+            logging.info(
+                "Uninstall all canceled because the translation cleanup index is unavailable."
+            )
+            return False, False
+        if response == QMessageBox.No:
+            return True, True
+
+        repair = self.repair_translation_cleanup()
+        if repair["failures"]:
+            details = "\n".join(str(item) for item in repair["failures"][:10])
+            QMessageBox.critical(
+                self,
+                "Translation Cleanup",
+                "Some game folders could not be cleaned:\n\n"
+                f"{details}\n\nThe launcher files were not removed.",
+            )
+            return False, False
+
+        if repair["cancelled"] and repair["cleaned"] == 0:
+            QMessageBox.warning(
+                self,
+                "Translation Cleanup",
+                "Cleanup was canceled. The launcher files were not removed.",
+            )
+            return False, False
+
+        if repair["cleaned"] == 0:
+            response = QMessageBox.question(
+                self,
+                "Translation Cleanup",
+                "No translation folders were cleaned. Continue uninstalling anyway?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if response != QMessageBox.Yes:
+                return False, False
+        # The index was missing/corrupt, so even after cleaning selected
+        # folders we cannot prove that every translation was found.
+        return True, True
+
     def uninstall_all(self):
-        if not QMessageBox.question(self, "Uninstall All", "Are you sure you want to uninstall all components?", QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if (
+            not QMessageBox.question(
+                self,
+                "Uninstall All",
+                "Are you sure you want to uninstall all components?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            == QMessageBox.Yes
+        ):
             logging.info("Uninstall all canceled by user.")
             return
 
         logging.info("Uninstalling all components...")
-        applications_dir = os.path.expanduser("~/Library/Application Support/RPGM-Launcher")
+        applications_dir = os.path.expanduser(
+            "~/Library/Application Support/RPGM-Launcher"
+        )
+        try:
+            cleanup = translation.uninstall_all_translations()
+        except Exception as exc:
+            logging.exception("Failed to clean installed translations")
+            QMessageBox.critical(
+                self,
+                "Uninstall All",
+                "Could not clean installed game translations:\n"
+                f"{exc}\n\nThe launcher files were not removed.",
+            )
+            return
+
+        cleanup_incomplete = False
+        if getattr(cleanup, "index_error", "") or getattr(
+            cleanup, "missing_index", False
+        ):
+            proceed, incomplete = self.handle_translation_index_problem(cleanup)
+            if not proceed:
+                return
+            cleanup_incomplete = incomplete
+
+        if getattr(cleanup, "failures", None):
+            details = "\n".join(str(item) for item in cleanup.failures[:10])
+            QMessageBox.critical(
+                self,
+                "Uninstall All",
+                "Some game translations could not be removed:\n\n"
+                f"{details}\n\nThe launcher files were not removed so cleanup "
+                "can be retried.",
+            )
+            return
+
         if os.path.exists(applications_dir):
             shutil.rmtree(applications_dir)
-            logging.info("All components uninstalled successfully.")
-            QMessageBox.information(self, "Uninstall All", "All components uninstalled successfully.")
+            if cleanup_incomplete:
+                logging.info(
+                    "Launcher components uninstalled; some game translations may remain."
+                )
+                QMessageBox.warning(
+                    self,
+                    "Uninstall All",
+                    "Launcher components were uninstalled, but some per-game "
+                    "translation files may remain in game folders.",
+                )
+            else:
+                logging.info("All components uninstalled successfully.")
+                QMessageBox.information(
+                    self, "Uninstall All", "All components uninstalled successfully."
+                )
         else:
             logging.error("RPGM-Launcher directory not found.")
             QMessageBox.critical(self, "Error", "RPGM-Launcher directory not found.")
@@ -2385,51 +3538,63 @@ class RPGMLauncher(QMainWindow):
     # Add or remove the cheat menu for RPG Maker MV and MZ games
     def add_cheat_menu(self, folder_path):
         www_folder_path = os.path.join(folder_path, "www")
-        cheat_menu_js_path = os.path.join(os.path.dirname(__file__), 'Cheat_Menu.js')
-        cheat_menu_css_path = os.path.join(os.path.dirname(__file__), 'Cheat_Menu.css')
+        cheat_menu_js_path = os.path.join(os.path.dirname(__file__), "Cheat_Menu.js")
+        cheat_menu_css_path = os.path.join(os.path.dirname(__file__), "Cheat_Menu.css")
         if os.path.exists(www_folder_path) and os.path.isdir(www_folder_path):
-            logging.info("The 'www' folder exists in the selected folder, likely RPG MV.")
-            if self.modify_MV_main_js(os.path.join(www_folder_path, 'js', 'main.js')):
+            logging.info(
+                "The 'www' folder exists in the selected folder, likely RPG MV."
+            )
+            if self.modify_MV_main_js(os.path.join(www_folder_path, "js", "main.js")):
                 logging.info("RPG MV main.js has been patched with cheat menu.")
                 self.copy_cheat_files(www_folder_path)
             else:
                 logging.info("RPG MV main.js has already been patched with cheat menu.")
         else:
-            logging.info("The 'www' folder does not exist in the selected folder, likely RPG MZ.")
-            if self.modify_MZ_main_js(os.path.join(folder_path, 'js', 'main.js')):
+            logging.info(
+                "The 'www' folder does not exist in the selected folder, likely RPG MZ."
+            )
+            if self.modify_MZ_main_js(os.path.join(folder_path, "js", "main.js")):
                 logging.info("RPG MZ main.js has been patched with cheat menu.")
                 self.copy_cheat_files(folder_path)
             else:
                 logging.info("RPG MZ main.js has already been patched with cheat menu.")
 
     def copy_cheat_files(self, target_folder):
-        plugins_folder = os.path.join(target_folder, 'js', 'plugins')
+        plugins_folder = os.path.join(target_folder, "js", "plugins")
         os.makedirs(plugins_folder, exist_ok=True)
-        shutil.copy(os.path.join(os.path.dirname(__file__), 'Cheat_Menu.js'), plugins_folder)
-        shutil.copy(os.path.join(os.path.dirname(__file__), 'Cheat_Menu.css'), plugins_folder)
+        shutil.copy(
+            os.path.join(os.path.dirname(__file__), "Cheat_Menu.js"), plugins_folder
+        )
+        shutil.copy(
+            os.path.join(os.path.dirname(__file__), "Cheat_Menu.css"), plugins_folder
+        )
         logging.info("Cheat_Menu.js and Cheat_Menu.css copied to %s", plugins_folder)
-    
+
     def remove_cheat_menu(self, folder_path):
         www_folder_path = os.path.join(folder_path, "www")
         if os.path.exists(www_folder_path) and os.path.isdir(www_folder_path):
-            logging.info("The 'www' folder exists in the selected folder, likely RPG MV.")
-            if self.unmodify_MV_main_js(os.path.join(www_folder_path, 'js', 'main.js')):
+            logging.info(
+                "The 'www' folder exists in the selected folder, likely RPG MV."
+            )
+            if self.unmodify_MV_main_js(os.path.join(www_folder_path, "js", "main.js")):
                 logging.info("RPG MV main.js has been unpatched from cheat menu.")
                 self.remove_cheat_files(www_folder_path)
             else:
                 logging.info("RPG MV main.js has not been patched with cheat menu.")
         else:
-            logging.info("The 'www' folder does not exist in the selected folder, likely RPG MZ.")
-            if self.unmodify_MZ_main_js(os.path.join(folder_path, 'js', 'main.js')):
+            logging.info(
+                "The 'www' folder does not exist in the selected folder, likely RPG MZ."
+            )
+            if self.unmodify_MZ_main_js(os.path.join(folder_path, "js", "main.js")):
                 logging.info("RPG MZ main.js has been unpatched from cheat menu.")
                 self.remove_cheat_files(folder_path)
             else:
                 logging.info("RPG MZ main.js has not been patched with cheat menu.")
-    
+
     def remove_cheat_files(self, target_folder):
-        plugins_folder = os.path.join(target_folder, 'js', 'plugins')
-        cheat_menu_js_path = os.path.join(plugins_folder, 'Cheat_Menu.js')
-        cheat_menu_css_path = os.path.join(plugins_folder, 'Cheat_Menu.css')
+        plugins_folder = os.path.join(target_folder, "js", "plugins")
+        cheat_menu_js_path = os.path.join(plugins_folder, "Cheat_Menu.js")
+        cheat_menu_css_path = os.path.join(plugins_folder, "Cheat_Menu.css")
         if os.path.exists(cheat_menu_js_path):
             os.remove(cheat_menu_js_path)
             logging.info("Removed Cheat_Menu.js from %s", plugins_folder)
@@ -2439,52 +3604,52 @@ class RPGMLauncher(QMainWindow):
 
     def modify_MV_main_js(self, file_path):
         try:
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 lines = file.readlines()
         except Exception as e:
             logging.error("Failed to read main.js: %s", str(e))
             return False
-        
+
         new_lines = [
             "PluginManager._path= 'js/plugins/';\n",
-            "PluginManager.loadScript('Cheat_Menu.js');\n"
+            "PluginManager.loadScript('Cheat_Menu.js');\n",
         ]
-        
+
         if any(line in lines for line in new_lines):
             logging.info("Cheat menu lines already present in main.js")
             return False
-        
+
         for i, line in enumerate(lines):
             if "PluginManager.setup($plugins);" in line:
                 lines.insert(i + 1, new_lines[0])
                 lines.insert(i + 2, new_lines[1])
                 break
-        
+
         try:
-            with open(file_path, 'w') as file:
+            with open(file_path, "w") as file:
                 file.writelines(lines)
             logging.info("main.js written successfully.")
         except Exception as e:
             logging.error("Failed to write main.js: %s", str(e))
             return False
-        
+
         return True
 
     def modify_MZ_main_js(self, file_path):
-        new_url = 'js/plugins/Cheat_Menu.js'
+        new_url = "js/plugins/Cheat_Menu.js"
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, "r", encoding="utf-8") as file:
                 content = file.read()
         except Exception as e:
             logging.error("Failed to read main.js: %s", str(e))
             return False
 
         # Grab the inside of the scriptUrls array
-        script_urls_pattern = re.compile(r'const scriptUrls = \[(.*?)\];', re.DOTALL)
+        script_urls_pattern = re.compile(r"const scriptUrls = \[(.*?)\];", re.DOTALL)
         match = script_urls_pattern.search(content)
 
         if not match:
-            logging.error('scriptUrls array not found in main.js.')
+            logging.error("scriptUrls array not found in main.js.")
             return False
 
         script_urls_content = match.group(1)
@@ -2498,40 +3663,38 @@ class RPGMLauncher(QMainWindow):
         managers_pattern = re.compile(r'([ \t]*)"js/rmmz_managers\.js",(\r?\n)')
 
         def insert_after_managers(m: re.Match) -> str:
-            indent = m.group(1)   # indentation before "js/rmmz_managers.js"
+            indent = m.group(1)  # indentation before "js/rmmz_managers.js"
             newline = m.group(2)  # the newline used in the file (\n or \r\n)
             # Keep the managers line, then add Cheat_Menu with the same indent/newline
             return m.group(0) + f'{indent}"{new_url}",{newline}'
 
         new_script_urls_content, count = managers_pattern.subn(
-            insert_after_managers,
-            script_urls_content,
-            count=1
+            insert_after_managers, script_urls_content, count=1
         )
 
         if count == 0:
-            logging.error('rmmz_managers.js not found in scriptUrls array.')
+            logging.error("rmmz_managers.js not found in scriptUrls array.")
             return False
 
         # Stitch everything back together
         new_content = (
-            content[:match.start(1)]
+            content[: match.start(1)]
             + new_script_urls_content
-            + content[match.end(1):]
+            + content[match.end(1) :]
         )
 
         try:
-            with open(file_path, 'w', encoding='utf-8') as file:
+            with open(file_path, "w", encoding="utf-8") as file:
                 file.write(new_content)
             logging.info("main.js written successfully.")
             return True
         except Exception as e:
             logging.error("Failed to write main.js: %s", str(e))
             return False
-    
+
     def unmodify_MV_main_js(self, file_path):
         try:
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 lines = file.readlines()
         except Exception as e:
             logging.error("Failed to read main.js: %s", str(e))
@@ -2539,7 +3702,7 @@ class RPGMLauncher(QMainWindow):
 
         lines_to_remove = [
             "PluginManager._path= 'js/plugins/';\n",
-            "PluginManager.loadScript('Cheat_Menu.js');\n"
+            "PluginManager.loadScript('Cheat_Menu.js');\n",
         ]
 
         if not any(line in lines for line in lines_to_remove):
@@ -2549,7 +3712,7 @@ class RPGMLauncher(QMainWindow):
         updated_lines = [line for line in lines if line not in lines_to_remove]
 
         try:
-            with open(file_path, 'w') as file:
+            with open(file_path, "w") as file:
                 file.writelines(updated_lines)
             logging.info("Cheat menu lines removed successfully.")
         except Exception as e:
@@ -2557,21 +3720,21 @@ class RPGMLauncher(QMainWindow):
             return False
 
         return True
-    
+
     def unmodify_MZ_main_js(self, file_path):
-        new_url = 'js/plugins/Cheat_Menu.js'
+        new_url = "js/plugins/Cheat_Menu.js"
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, "r", encoding="utf-8") as file:
                 content = file.read()
         except Exception as e:
             logging.error("Failed to read main.js: %s", str(e))
             return False
 
-        script_urls_pattern = re.compile(r'const scriptUrls = \[(.*?)\];', re.DOTALL)
+        script_urls_pattern = re.compile(r"const scriptUrls = \[(.*?)\];", re.DOTALL)
         match = script_urls_pattern.search(content)
 
         if not match:
-            logging.error('scriptUrls array not found in main.js.')
+            logging.error("scriptUrls array not found in main.js.")
             return False
 
         script_urls_content = match.group(1)
@@ -2580,24 +3743,23 @@ class RPGMLauncher(QMainWindow):
             return False
 
         line_pattern = re.compile(
-            r'^[ \t]*"' + re.escape(new_url) + r'",\r?\n',
-            re.MULTILINE
+            r'^[ \t]*"' + re.escape(new_url) + r'",\r?\n', re.MULTILINE
         )
 
-        new_script_urls_content, count = line_pattern.subn('', script_urls_content)
+        new_script_urls_content, count = line_pattern.subn("", script_urls_content)
 
         if count == 0:
             logging.error("Cheat menu URL not found as a separate line in scriptUrls.")
             return False
 
         new_content = (
-            content[:match.start(1)]
+            content[: match.start(1)]
             + new_script_urls_content
-            + content[match.end(1):]
+            + content[match.end(1) :]
         )
 
         try:
-            with open(file_path, 'w', encoding='utf-8') as file:
+            with open(file_path, "w", encoding="utf-8") as file:
                 file.write(new_content)
             logging.info("Cheat menu URL removed successfully.")
             return True
@@ -2609,14 +3771,26 @@ class RPGMLauncher(QMainWindow):
     # RPG MV and MZ games only
     def optimize_space(self):
         files_to_remove = [
-            "credits.html", "d3dcompiler_47.dll", "ffmpeg.dll", "icudtl.dat", "libEGL.dll",
-            "libGLESv2.dll", "node.dll", "nw.dll", "nw_100_percent.pak", "nw_200_percent.pak",
-            "nw_elf.dll", "resources.pak", "v8_context_snapshot.bin", "vk_swiftshader.dll",
-            "vk_swiftshader_icd.json", "vulkan-1.dll"
+            "credits.html",
+            "d3dcompiler_47.dll",
+            "ffmpeg.dll",
+            "icudtl.dat",
+            "libEGL.dll",
+            "libGLESv2.dll",
+            "node.dll",
+            "nw.dll",
+            "nw_100_percent.pak",
+            "nw_200_percent.pak",
+            "nw_elf.dll",
+            "resources.pak",
+            "v8_context_snapshot.bin",
+            "vk_swiftshader.dll",
+            "vk_swiftshader_icd.json",
+            "vulkan-1.dll",
         ]
-        
+
         folders_to_remove = ["locales", "swiftshader"]
-        
+
         for root, dirs, files in os.walk(self.last_selected_folder):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -2625,8 +3799,12 @@ class RPGMLauncher(QMainWindow):
                         os.remove(file_path)
                         logging.info("Removed file: %s", file_path)
                     except Exception as e:
-                        logging.error("Failed to remove file (already optimized?) %s: %s", file_path, str(e))
-            
+                        logging.error(
+                            "Failed to remove file (already optimized?) %s: %s",
+                            file_path,
+                            str(e),
+                        )
+
             for folder in dirs:
                 folder_path = os.path.join(root, folder)
                 if folder in folders_to_remove:
@@ -2634,11 +3812,15 @@ class RPGMLauncher(QMainWindow):
                         shutil.rmtree(folder_path)
                         logging.info("Removed folder: %s", folder_path)
                     except Exception as e:
-                        logging.error("Failed to remove folder (already optimized?) %s: %s", folder_path, str(e))
+                        logging.error(
+                            "Failed to remove folder (already optimized?) %s: %s",
+                            folder_path,
+                            str(e),
+                        )
 
     def open_log(self):
         try:
-            with open(LOG_FILE, 'r') as file:
+            with open(LOG_FILE, "r") as file:
                 log_contents = file.read()
         except Exception as e:
             logging.error("Failed to read log file: %s", str(e))
@@ -2661,25 +3843,30 @@ class RPGMLauncher(QMainWindow):
 
         dialog.exec()
 
+
 def main():
     check_appdir()
 
     # Set up logging after ensuring the directory exists
-    logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, 
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        filename=LOG_FILE,
+        level=logging.DEBUG,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
 
     # Redirect stdout and stderr to log file
-    sys.stdout = open(LOG_FILE, 'a')
-    sys.stderr = open(LOG_FILE, 'a')
+    sys.stdout = open(LOG_FILE, "a")
+    sys.stderr = open(LOG_FILE, "a")
 
     logging.info("Launcher version: %s", current_version)
     logging.info("MacOS version: %s", platform.mac_ver()[0])
     logging.info("MacOS architecture: %s", platform.machine())
-    
+
     app = QApplication(sys.argv)
     window = RPGMLauncher()
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()
